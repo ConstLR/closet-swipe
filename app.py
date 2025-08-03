@@ -5,9 +5,9 @@ from PIL import Image
 from collections import defaultdict
 
 app = Flask(__name__)
-app.secret_key = 'a-very-secret-key-for-collections'
+app.secret_key = 'a-very-secret-key-for-collections-final'
 
-# --- Configuration and Setup ---
+# --- Configuration and Setup (inchangé) ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PHOTO_DIR = os.path.join(BASE_DIR, 'static', 'photos')
 THUMB_DIR = os.path.join(BASE_DIR, 'static', 'thumbs')
@@ -21,8 +21,9 @@ def db_load():
         return {'items': {}, 'lists': {}, 'collections': {}}
     with open(DB_FILE, 'r', encoding='utf-8') as f:
         data = json.load(f)
-        if 'collections' not in data:
-            data['collections'] = {}
+        if 'collections' not in data: data['collections'] = {}
+        if 'lists' not in data: data['lists'] = {}
+        if 'items' not in data: data['items'] = {}
         return data
 
 def db_save(data):
@@ -40,52 +41,86 @@ def make_thumb(path):
             img = Image.open(path)
             img.thumbnail((400, 400))
             img.save(thumb_path)
-        except IOError:
-            return None
+        except IOError: return None
     return os.path.join('static', 'thumbs', name).replace('\\', '/')
 
-# --- Main Routes ---
+# --- Main Routes (inchangé) ---
 @app.route('/')
-def home():
-    return render_template('index.html')
+def home(): return render_template('index.html')
 
 @app.route('/list/<name>')
-def list_page(name):
-    return render_template('list.html', list_name=name)
-
-# --- Routes pour la visualisation des sélections ---
+def list_page(name): return render_template('list.html', list_name=name)
 
 @app.route('/selections')
 def selections_hub():
-    """Affiche la liste de toutes les collections."""
     data = db_load()
     collections = list(data['collections'].keys())
     return render_template('selections.html', collections=collections)
 
+# --- MODIFIED : collection_detail_page ---
+# Ajout de la logique "aussi sélectionné dans"
 @app.route('/selections/<collection_name>')
 def collection_detail_page(collection_name):
-    """Affiche les votes pour une collection, groupés par liste de sélecteur."""
     data = db_load()
     items_db = data.get('items', {})
     all_lists = data.get('lists', {})
-    
     results_by_list = defaultdict(lambda: {'want': [], 'dont': []})
 
     for list_name, picks in all_lists.items():
         for item_id, vote_info in picks.items():
             item_details = items_db.get(item_id)
             if item_details and item_details.get('collection') == collection_name:
+                # Logique "aussi sélectionné dans"
+                also_wanted_in = []
+                if vote_info.get('choice') == 'want':
+                    for other_list, other_picks in all_lists.items():
+                        if other_list != list_name and other_picks.get(item_id, {}).get('choice') == 'want':
+                            also_wanted_in.append(other_list)
+                item_details['also_wanted_in'] = also_wanted_in
+                
                 choice = vote_info.get('choice')
                 if choice == 'want':
                     results_by_list[list_name]['want'].append(item_details)
                 elif choice == 'dont':
                     results_by_list[list_name]['dont'].append(item_details)
-
-    return render_template('collection_detail.html', 
-                           collection_name=collection_name, 
-                           results=results_by_list)
+    return render_template('collection_detail.html', collection_name=collection_name, results=results_by_list)
 
 # --- API Routes ---
+
+# --- NOUVEAU : Routes de suppression ---
+@app.route('/api/collections/<name>', methods=['DELETE'])
+def delete_collection(name):
+    data = db_load()
+    if name in data['collections']:
+        # Supprimer la collection et tous les items associés
+        items_to_delete = [item_id for item_id, item_data in data['items'].items() if item_data.get('collection') == name]
+        for item_id in items_to_delete:
+            # Supprimer les fichiers physiques
+            try:
+                os.remove(os.path.join(PHOTO_DIR, item_id))
+                os.remove(os.path.join(THUMB_DIR, item_id))
+            except FileNotFoundError:
+                pass
+            # Supprimer des items et des listes de vote
+            del data['items'][item_id]
+            for list_name in data['lists']:
+                if item_id in data['lists'][list_name]:
+                    del data['lists'][list_name][item_id]
+        del data['collections'][name]
+        db_save(data)
+        return jsonify({'status': 'ok'})
+    return jsonify({'status': 'not_found'}), 404
+
+@app.route('/api/lists/<name>', methods=['DELETE'])
+def delete_list(name):
+    data = db_load()
+    if name in data['lists']:
+        del data['lists'][name]
+        db_save(data)
+        return jsonify({'status': 'ok'})
+    return jsonify({'status': 'not_found'}), 404
+
+# --- Routes API existantes (avec modifications mineures) ---
 @app.route('/api/collections', methods=['GET', 'POST'])
 def api_collections():
     data = db_load()
@@ -97,12 +132,12 @@ def api_collections():
         return jsonify({'status': 'ok'})
     return jsonify(list(data['collections'].keys()))
 
+# ... (les autres routes API comme /api/collections/<name>/items, /bulk_upload, etc., restent inchangées) ...
 @app.route('/api/collections/<name>/items')
 def api_collection_items(name):
     data = db_load()
     collection_items = [item for item in data['items'].values() if item.get('collection') == name]
     return jsonify(sorted(collection_items, key=lambda x: x.get('ts', ''), reverse=True))
-
 @app.route('/bulk_upload', methods=['POST'])
 def bulk_upload():
     files = request.files.getlist('photos')
@@ -125,7 +160,6 @@ def bulk_upload():
     if saved_count > 0:
         db_save(data)
     return jsonify({'status': 'ok', 'count': saved_count})
-
 @app.route('/api/list/<name>/items')
 def api_list_items(name):
     data = db_load()
@@ -146,7 +180,6 @@ def api_list_items(name):
             item_data['also_wanted_in'] = also_wanted_in
             grouped_results[item_collection].append(item_data)
     return jsonify(grouped_results)
-
 @app.route('/api/delete/<fid>', methods=['POST'])
 def api_delete(fid):
     data = db_load()
@@ -158,35 +191,25 @@ def api_delete(fid):
     for lst in data['lists'].values(): lst.pop(fid, None)
     db_save(data)
     return jsonify({'status': 'ok'})
-
 @app.route('/api/caption/<fid>', methods=['POST'])
 def api_caption(fid):
-    data = db_load()
-    if fid in data['items']: data['items'][fid]['caption'] = request.json.get('caption', '')
-    db_save(data)
+    data = db_load();
+    if fid in data['items']: data['items'][fid]['caption'] = request.json.get('caption', ''); db_save(data)
     return jsonify({'status': 'ok'})
-
 @app.route('/api/lists')
 def api_lists(): return jsonify(db_load().get('lists', {}))
-
 @app.route('/api/list/<name>', methods=['POST'])
 def api_create_list(name):
-    name = name.strip()
+    name = name.strip();
     if not name: return jsonify({'status': 'empty_name'}), 400
-    data = db_load()
-    if name not in data['lists']: data['lists'][name] = {}
-    db_save(data)
+    data = db_load();
+    if name not in data['lists']: data['lists'][name] = {}; db_save(data)
     return jsonify({'status': 'created'})
-
 @app.route('/api/list/<name>/vote', methods=['POST'])
 def api_vote(name):
-    req_data = request.json
-    item_id = req_data.get('item')
-    choice = req_data.get('choice')
-    comment = req_data.get('comment', '')
-    data = db_load()
-    if name in data['lists']: data['lists'][name][item_id] = {'choice': choice, 'comment': comment, 'ts': datetime.datetime.utcnow().isoformat()}
-    db_save(data)
+    req_data = request.json; item_id = req_data.get('item'); choice = req_data.get('choice'); comment = req_data.get('comment', '')
+    data = db_load();
+    if name in data['lists']: data['lists'][name][item_id] = {'choice': choice, 'comment': comment, 'ts': datetime.datetime.utcnow().isoformat()}; db_save(data)
     return jsonify({'status': 'ok'})
 
 if __name__ == '__main__':
