@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 
 app = Flask(__name__)
-app.secret_key = 'closet-secret'
+app.secret_key = 'any-secret-string'
 
 # folders
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -14,7 +14,7 @@ DB_FILE = os.path.join(BASE_DIR, 'data.json')
 for d in (PHOTO_DIR, THUMB_DIR):
     os.makedirs(d, exist_ok=True)
 
-ALLOWED = {'png','jpg','jpeg','gif','webp'}
+ALLOWED = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 def allowed(f): return '.' in f and f.rsplit('.',1)[1].lower() in ALLOWED
 
 def make_thumb(path):
