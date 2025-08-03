@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Closet Swipe</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body{margin:0;font-family:Arial;background:#f5f5f5}
+    #login{display:flex;flex-direction:column;align-items:center;margin-top:40px}
+    #login input,#login select,#login button{margin:6px;font-size:18px;padding:6px}
+    .card{position:absolute;width:300px;height:400px;background:#fff;border-radius:10px;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+    .card img{width:100%;height:75%;object-fit:cover;border-radius:10px 10px 0 0}
+    .caption{padding:10px;font-size:14px}
+    .controls{position:fixed;bottom:20px;width:100%;text-align:center}
+    .controls button{margin:0 20px;font-size:24px;width:60px;height:60px;border-radius:50%;border:none;cursor:pointer}
+    .yes{background:#4caf50;color:#fff}
+    .no{background:#f44336;color:#fff}
+    #uploadArea{border:2px dashed #aaa;border-radius:8px;padding:20px;text-align:center;margin:20px}
+  </style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login">
+  <h2>Closet Swipe – Family Login</h2>
+  <form method="post" action="/login">
+    <select name="user">
+      <option value="mom">Mom (upload)</option>
+      <option value="alex">Alex</option>
+      <option value="ben">Ben</option>
+    </select>
+    <input type="password" name="password" placeholder="Password">
+    <button type="submit">Enter</button>
+  </form>
+</div>
+
+<!-- Mom upload -->
+<div id="momView" style="display:none">
+  <h2 style="text-align:center">Upload clothes</h2>
+  <form id="uploadForm" enctype="multipart/form-data" method="post" action="/upload">
+    <div id="uploadArea">
+      <input type="file" name="photo" accept="image/*" required><br>
+      <input type="text" name="caption" placeholder="Optional caption"><br>
+      <button>Save</button>
+    </div>
+  </form>
+  <h3 style="text-align:center">Send lists</h3>
+  <ul id="sendLists"></ul>
+</div>
+
+<!-- Son swipe -->
+<div id="sonView" style="display:none">
+  <div id="viewer">
+    <div class="card">
+      <img id="img"><div class="caption" id="cap"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="no" onclick="vote('no')">✕</button>
+    <button class="yes" onclick="vote('yes')">✓</button>
+  </div>
+  <textarea id="comment" placeholder="Comment (optional)" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:260px"></textarea>
+</div>
+
+<script>
+let items=[], idx=0, user='{{ session.user }}';
+
+async function load(){
+  const res = await fetch('/api/items');
+  items = Object.entries(await res.json()).map(([id,data])=>({id,...data}));
+  idx = 0;
+  show();
+}
+function show(){
+  if(idx>=items.length){document.body.innerHTML='<h1 style="text-align:center">All done!</h1>';return;}
+  const it=items[idx];
+  document.getElementById('img').src='/static/photos/'+it.id;
+  document.getElementById('cap').textContent=it.caption;
+}
+async function vote(decision){
+  const comment=document.getElementById('comment').value;
+  await fetch('/swipe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:items[idx].id,decision,comment})});
+  idx++; show(); document.getElementById('comment').value='';
+}
+function init(){
+  if(user==='mom'){
+    document.getElementById('login').style.display='none';
+    document.getElementById('momView').style.display='block';
+    buildSendLists();
+  }else if(['alex','ben'].includes(user)){
+    document.getElementById('login').style.display='none';
+    document.getElementById('sonView').style.display='block';
+    load();
+  }
+}
+function buildSendLists(){
+  fetch('/api/items').then(r=>r.json()).then(db=>{
+    const ul=document.getElementById('sendLists');
+    ul.innerHTML='';
+    ['alex','ben'].forEach(son=>{
+      const li=document.createElement('li');
+      const wanted=Object.entries(db).filter(([,d])=>d.votes[son]?.decision==='yes');
+      li.innerHTML=`<b>${son}</b>: `+(wanted.map(([id,d])=>d.caption||id).join(', ')||'—');
+      ul.appendChild(li);
+    });
+  });
+}
+init();
+</script>
+</body>
+</html>
