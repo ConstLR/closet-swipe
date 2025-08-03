@@ -15,14 +15,14 @@ for d in (PHOTO_DIR, THUMB_DIR):
     os.makedirs(d, exist_ok=True)
 
 ALLOWED = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-def allowed(f): return '.' in f and f.rsplit('.',1)[1].lower() in ALLOWED
+def allowed(f): return '.' in f and f.rsplit('.', 1)[1].lower() in ALLOWED
 
 def make_thumb(path):
     name = os.path.basename(path)
     tpath = os.path.join(THUMB_DIR, name)
     if not os.path.exists(tpath):
         img = Image.open(path)
-        img.thumbnail((300,300))
+        img.thumbnail((300, 300))
         img.save(tpath)
     return 'static/thumbs/' + name
 
@@ -32,7 +32,7 @@ def db_load():
     return json.load(open(DB_FILE, encoding='utf-8'))
 
 def db_save(d):
-    json.dump(d, open(DB_FILE,'w',encoding='utf-8'), indent=2)
+    json.dump(d, open(DB_FILE, 'w', encoding='utf-8'), indent=2)
 
 # ---------- routes ----------
 @app.route('/')
@@ -48,11 +48,11 @@ def api_items():
 @app.route('/bulk_upload', methods=['POST'])
 def bulk_upload():
     files = request.files.getlist('photos')
-    caption = request.form.get('caption','')
-    saved=[]
+    caption = request.form.get('caption', '')
+    saved = []
     for f in files:
         if f and allowed(f.filename):
-            ext = secure_filename(f.filename).rsplit('.',1)[1]
+            ext = secure_filename(f.filename).rsplit('.', 1)[1]
             fname = str(uuid.uuid4()) + '.' + ext
             fpath = os.path.join(PHOTO_DIR, fname)
             f.save(fpath)
@@ -61,15 +61,15 @@ def bulk_upload():
     if saved:
         data = db_load()
         for fname in saved:
-            data['items'][fname]={'id':fname,'caption':caption,'ts':datetime.datetime.utcnow().isoformat(),'thumb':thumb}
+            data['items'][fname] = {'id': fname, 'caption': caption, 'ts': datetime.datetime.utcnow().isoformat(), 'thumb': thumb}
         db_save(data)
-    return jsonify({'status':'ok','count':len(saved)})
+    return jsonify({'status': 'ok', 'count': len(saved)})
 
 @app.route('/api/delete/<fid>', methods=['POST'])
 def api_delete(fid):
     data = db_load()
     if fid not in data['items']:
-        return jsonify({'status':'not_found'}), 404
+        return jsonify({'status': 'not_found'}), 404
     try:
         os.remove(os.path.join(PHOTO_DIR, fid))
         os.remove(os.path.join(THUMB_DIR, fid))
@@ -79,7 +79,7 @@ def api_delete(fid):
     for lst in data['lists'].values():
         lst.pop(fid, None)
     db_save(data)
-    return jsonify({'status':'ok'})
+    return jsonify({'status': 'ok'})
 
 @app.route('/api/caption/<fid>', methods=['POST'])
 def api_caption(fid):
@@ -87,7 +87,7 @@ def api_caption(fid):
     if fid in data['items']:
         data['items'][fid]['caption'] = request.json['caption']
         db_save(data)
-    return jsonify({'status':'ok'})
+    return jsonify({'status': 'ok'})
 
 @app.route('/api/lists')
 def api_lists():
@@ -117,23 +117,23 @@ def list_page(name):
 @app.route('/api/list/<name>', methods=['POST'])
 def api_create_list(name):
     name = name.strip()
-    if not name: return jsonify({'status':'empty'}), 400
+    if not name: return jsonify({'status': 'empty'}), 400
     data = db_load()
     if name not in data['lists']:
         data['lists'][name] = {}
         db_save(data)
-    return jsonify({'status':'ok'})
+    return jsonify({'status': 'ok'})
 
 @app.route('/api/list/<name>/vote', methods=['POST'])
 def api_vote(name):
     item = request.json['item']
     choice = request.json['choice']
-    comment = request.json.get('comment','')
+    comment = request.json.get('comment', '')
     data = db_load()
     if name in data['lists']:
-        data['lists'][name][item]={'choice':choice,'comment':comment,'ts':datetime.datetime.utcnow().isoformat()}
+        data['lists'][name][item] = {'choice': choice, 'comment': comment, 'ts': datetime.datetime.utcnow().isoformat()}
         db_save(data)
-    return jsonify({'status':'ok'})
+    return jsonify({'status': 'ok'})
 
 @app.route('/static/photos/<path:filename>')
 def photos(filename):
