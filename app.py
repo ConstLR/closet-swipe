@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify
 import os, uuid, json, datetime
 from werkzeug.utils import secure_filename
 from PIL import Image
@@ -27,7 +27,7 @@ def make_thumb(path):
     if not os.path.exists(thumb_path):
         try:
             img = Image.open(path)
-            img.thumbnail((300, 300))
+            img.thumbnail((400, 400)) # Slightly larger thumbs for better quality
             img.save(thumb_path)
         except IOError:
             print(f"Cannot create thumbnail for {name}")
@@ -94,15 +94,13 @@ def api_delete(fid):
     if fid not in data['items']:
         return jsonify({'status': 'not_found'}), 404
     
-    # Remove files safely
     for directory, filename in [(PHOTO_DIR, fid), (THUMB_DIR, fid)]:
         try:
             os.remove(os.path.join(directory, filename))
         except FileNotFoundError:
-            pass # Ignore if file is already gone
+            pass
             
     del data['items'][fid]
-    # Remove item from any list that contains it
     for lst in data['lists'].values():
         lst.pop(fid, None)
         
@@ -148,17 +146,29 @@ def api_vote(name):
         db_save(data)
     return jsonify({'status': 'ok'})
 
+# THIS FUNCTION IS UPDATED FOR THE "ALSO WANTED ON" FEATURE
 @app.route('/api/list/<name>/items')
 def api_list_items(name):
     data = db_load()
-    items = data.get('items', {})
-    picks = data.get('lists', {}).get(name, {})
+    items_db = data.get('items', {})
+    all_lists = data.get('lists', {})
+    current_picks = all_lists.get(name, {})
     
     results = []
-    for fid, vote_info in picks.items():
-        if fid in items:
-            item_data = items[fid].copy()
+    for fid, vote_info in current_picks.items():
+        if fid in items_db:
+            item_data = items_db[fid].copy()
             item_data.update(vote_info)
+            
+            # New logic: Check other lists for 'wants'
+            also_wanted_in = []
+            if vote_info['choice'] == 'want':
+                for other_list_name, other_picks in all_lists.items():
+                    if other_list_name != name:
+                        if other_picks.get(fid, {}).get('choice') == 'want':
+                            also_wanted_in.append(other_list_name)
+            
+            item_data['also_wanted_in'] = also_wanted_in
             results.append(item_data)
             
     return jsonify(results)
