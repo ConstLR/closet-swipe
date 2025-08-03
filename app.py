@@ -12,10 +12,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PHOTO_DIR = os.path.join(BASE_DIR, 'static', 'photos')
 THUMB_DIR = os.path.join(BASE_DIR, 'static', 'thumbs')
 DB_FILE = os.path.join(BASE_DIR, 'data.json')
-
 for d in (PHOTO_DIR, THUMB_DIR):
     os.makedirs(d, exist_ok=True)
-
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 def db_load():
@@ -55,6 +53,38 @@ def home():
 def list_page(name):
     return render_template('list.html', list_name=name)
 
+# --- Routes pour la visualisation des sélections ---
+
+@app.route('/selections')
+def selections_hub():
+    """Affiche la liste de toutes les collections."""
+    data = db_load()
+    collections = list(data['collections'].keys())
+    return render_template('selections.html', collections=collections)
+
+@app.route('/selections/<collection_name>')
+def collection_detail_page(collection_name):
+    """Affiche les votes pour une collection, groupés par liste de sélecteur."""
+    data = db_load()
+    items_db = data.get('items', {})
+    all_lists = data.get('lists', {})
+    
+    results_by_list = defaultdict(lambda: {'want': [], 'dont': []})
+
+    for list_name, picks in all_lists.items():
+        for item_id, vote_info in picks.items():
+            item_details = items_db.get(item_id)
+            if item_details and item_details.get('collection') == collection_name:
+                choice = vote_info.get('choice')
+                if choice == 'want':
+                    results_by_list[list_name]['want'].append(item_details)
+                elif choice == 'dont':
+                    results_by_list[list_name]['dont'].append(item_details)
+
+    return render_template('collection_detail.html', 
+                           collection_name=collection_name, 
+                           results=results_by_list)
+
 # --- API Routes ---
 @app.route('/api/collections', methods=['GET', 'POST'])
 def api_collections():
@@ -78,11 +108,8 @@ def bulk_upload():
     files = request.files.getlist('photos')
     caption = request.form.get('caption', '')
     collection = request.form.get('collection', '')
-
     if not collection:
-        # Translated error message
         return jsonify({'status': 'error', 'message': 'Une collection est requise.'}), 400
-
     data = db_load()
     saved_count = 0
     for file in files:
@@ -91,18 +118,10 @@ def bulk_upload():
             fname = f"{uuid.uuid4()}.{ext}"
             fpath = os.path.join(PHOTO_DIR, fname)
             file.save(fpath)
-            
             thumb_url = make_thumb(fpath)
             if thumb_url:
-                data['items'][fname] = {
-                    'id': fname, 
-                    'caption': caption, 
-                    'ts': datetime.datetime.utcnow().isoformat(), 
-                    'thumb': thumb_url,
-                    'collection': collection
-                }
+                data['items'][fname] = {'id': fname, 'caption': caption, 'ts': datetime.datetime.utcnow().isoformat(), 'thumb': thumb_url,'collection': collection}
                 saved_count += 1
-    
     if saved_count > 0:
         db_save(data)
     return jsonify({'status': 'ok', 'count': saved_count})
@@ -113,27 +132,21 @@ def api_list_items(name):
     items_db = data.get('items', {})
     all_lists = data.get('lists', {})
     current_picks = all_lists.get(name, {})
-    
     grouped_results = defaultdict(list)
-    
     for fid, vote_info in current_picks.items():
         if fid in items_db:
             item_data = items_db[fid].copy()
             item_data.update(vote_info)
             item_collection = item_data.get('collection', 'Uncategorized')
-            
             also_wanted_in = []
             if vote_info['choice'] == 'want':
                 for other_list_name, other_picks in all_lists.items():
                     if other_list_name != name and other_picks.get(fid, {}).get('choice') == 'want':
                         also_wanted_in.append(other_list_name)
-            
             item_data['also_wanted_in'] = also_wanted_in
             grouped_results[item_collection].append(item_data)
-            
     return jsonify(grouped_results)
 
-# (Other routes are unchanged)
 @app.route('/api/delete/<fid>', methods=['POST'])
 def api_delete(fid):
     data = db_load()
@@ -148,8 +161,9 @@ def api_delete(fid):
 
 @app.route('/api/caption/<fid>', methods=['POST'])
 def api_caption(fid):
-    data = db_load();
-    if fid in data['items']: data['items'][fid]['caption'] = request.json.get('caption', ''); db_save(data)
+    data = db_load()
+    if fid in data['items']: data['items'][fid]['caption'] = request.json.get('caption', '')
+    db_save(data)
     return jsonify({'status': 'ok'})
 
 @app.route('/api/lists')
@@ -157,17 +171,22 @@ def api_lists(): return jsonify(db_load().get('lists', {}))
 
 @app.route('/api/list/<name>', methods=['POST'])
 def api_create_list(name):
-    name = name.strip();
+    name = name.strip()
     if not name: return jsonify({'status': 'empty_name'}), 400
-    data = db_load();
-    if name not in data['lists']: data['lists'][name] = {}; db_save(data)
+    data = db_load()
+    if name not in data['lists']: data['lists'][name] = {}
+    db_save(data)
     return jsonify({'status': 'created'})
 
 @app.route('/api/list/<name>/vote', methods=['POST'])
 def api_vote(name):
-    req_data = request.json; item_id = req_data.get('item'); choice = req_data.get('choice'); comment = req_data.get('comment', '')
-    data = db_load();
-    if name in data['lists']: data['lists'][name][item_id] = {'choice': choice, 'comment': comment, 'ts': datetime.datetime.utcnow().isoformat()}; db_save(data)
+    req_data = request.json
+    item_id = req_data.get('item')
+    choice = req_data.get('choice')
+    comment = req_data.get('comment', '')
+    data = db_load()
+    if name in data['lists']: data['lists'][name][item_id] = {'choice': choice, 'comment': comment, 'ts': datetime.datetime.utcnow().isoformat()}
+    db_save(data)
     return jsonify({'status': 'ok'})
 
 if __name__ == '__main__':
