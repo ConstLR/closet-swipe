@@ -1,11 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>List: {{ list_name }}</title>
+<title>Liste : {{ list_name }}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-/* Styles are same as previous step */
 :root{--primary:#3a3a3a;--bg:#f3efe9;--card:#ffffff;--text:#3a3a3a;--border-color:#e0e0e0;--radius:8px;--danger:#d9534f;--success:#5cb85c;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
 body{margin:0;padding:20px;background:var(--bg);color:var(--text);}
 h1,h2,h3{margin:0 0 1em;color:var(--primary);text-transform:uppercase;letter-spacing:1px;text-align:center;}
@@ -32,11 +31,11 @@ h3{font-size:1.1em;text-align:left;border-bottom:1px solid #ccc;padding-bottom:.
 </head>
 <body>
 <a class="back-link" href="/">← Menu</a>
-<h1 class="list-title">Results For List</h1>
+<h1 class="list-title">Résultats pour la liste</h1>
 <h1>{{ list_name }}</h1>
 
 <div id="results-container"></div>
-<p id="no-items" style="display:none;">No items have been selected for this list yet.</p>
+<p id="no-items" style="display:none;">Aucun article n'a été sélectionné pour cette liste.</p>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -51,11 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Loop through each collection in the data
         for (const collectionName in groupedData) {
             const items = groupedData[collectionName];
             
-            // Create a section for the collection
             const collectionSection = document.createElement('div');
             collectionSection.className = 'collection-section';
             collectionSection.innerHTML = `<h2>${collectionName}</h2>`;
@@ -63,10 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const wants = items.filter(item => item.choice === 'want');
             const dontWants = items.filter(item => item.choice === 'dont');
 
-            // Create 'Wants' subsection if there are any
             if (wants.length > 0) {
                 const wantsContainer = document.createElement('div');
-                wantsContainer.innerHTML = '<h3>Wants</h3>';
+                wantsContainer.innerHTML = '<h3>Sélection "Oui"</h3>';
                 const wantsGrid = document.createElement('div');
                 wantsGrid.className = 'grid';
                 wants.forEach(it => wantsGrid.appendChild(createCard(it)));
@@ -74,10 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 collectionSection.appendChild(wantsContainer);
             }
 
-            // Create 'Don't Wants' subsection if there are any
             if (dontWants.length > 0) {
                 const dontWantsContainer = document.createElement('div');
-                dontWantsContainer.innerHTML = "<h3>Don't Wants</h3>";
+                dontWantsContainer.innerHTML = "<h3>Sélection \"Non\"</h3>";
                 const dontWantsGrid = document.createElement('div');
                 dontWantsGrid.className = 'grid';
                 dontWants.forEach(it => dontWantsGrid.appendChild(createCard(it)));
@@ -97,16 +92,16 @@ function createCard(it) {
     let alsoWantedHTML = '';
     if (it.also_wanted_in && it.also_wanted_in.length > 0) {
         const listItems = it.also_wanted_in.map(name => `<li>${name}</li>`).join('');
-        alsoWantedHTML = `<div class="also-wanted"><strong>Also wanted on:</strong><ul>${listItems}</ul></div>`;
+        alsoWantedHTML = `<div class="also-wanted"><strong>Aussi voulu sur :</strong><ul>${listItems}</ul></div>`;
     }
 
     card.innerHTML = `
         <img src="/${it.thumb.replace('\\', '/')}" alt="${it.caption}">
         ${alsoWantedHTML}
         <div class="info">
-            <div class="choice ${it.choice}">${it.choice}</div>
-            <div class="caption">${it.caption || 'No caption'}</div>
-            ${it.comment ? `<div class="comment"><strong>Comment:</strong> ${it.comment}</div>` : ''}
+            <div class="choice ${it.choice}">${it.choice === 'want' ? 'Oui' : 'Non'}</div>
+            <div class="caption">${it.caption || 'Sans légende'}</div>
+            ${it.comment ? `<div class="comment"><strong>Commentaire :</strong> ${it.comment}</div>` : ''}
         </div>`;
     return card;
 }
