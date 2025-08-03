@@ -1,111 +1,228 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Closet Swipe</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <style>
-    body{margin:0;font-family:Arial;background:#f5f5f5}
-    #login{display:flex;flex-direction:column;align-items:center;margin-top:40px}
-    #login input,#login select,#login button{margin:6px;font-size:18px;padding:6px}
-    .card{position:absolute;width:300px;height:400px;background:#fff;border-radius:10px;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 4px 12px rgba(0,0,0,.3)}
-    .card img{width:100%;height:75%;object-fit:cover;border-radius:10px 10px 0 0}
-    .caption{padding:10px;font-size:14px}
-    .controls{position:fixed;bottom:20px;width:100%;text-align:center}
-    .controls button{margin:0 20px;font-size:24px;width:60px;height:60px;border-radius:50%;border:none;cursor:pointer}
-    .yes{background:#4caf50;color:#fff}
-    .no{background:#f44336;color:#fff}
-    #uploadArea{border:2px dashed #aaa;border-radius:8px;padding:20px;text-align:center;margin:20px}
-  </style>
+<meta charset="utf-8">
+<title>Closet Select</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fafafa;color:#333}
+    h1{text-align:center;margin:20px 0 10px;font-size:28px}
+    .menu{display:flex;justify-content:center;gap:40px;margin-bottom:20px}
+    .menu button{padding:12px 24px;font-size:16px;border:none;border-radius:6px;cursor:pointer;background:#4caf50;color:#fff}
+    .menu button:hover{opacity:.9}
+    /* Uploader panel */
+    #uploader{display:none;max-width:1000px;margin:auto;padding:0 10px}
+    #uploader h2{margin:10px 0}
+    .photo-strip{display:flex;overflow-x:auto;gap:10px;padding:10px 0}
+    .photo-strip img{height:120px;border:1px solid #ccc;border-radius:4px;cursor:pointer}
+    #uploadArea{margin:20px 0}
+    #uploadArea input[type=file]{margin-bottom:6px}
+    #uploadArea textarea{width:100%;max-width:400px;height:60px}
+    #uploadArea button{margin-top:6px}
+    #uLists ul{list-style:none;padding:0}
+    #uLists li{padding:6px;border-bottom:1px solid #eee;cursor:pointer}
+    /* Selector panel */
+    #selector{display:none;max-width:1000px;margin:auto;padding:10px}
+    .selLists{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px}
+    .selLists button{background:#2196f3;color:#fff;padding:8px 16px;border:none;border-radius:4px;cursor:pointer}
+    #newListForm{margin-bottom:20px}
+    #newListForm input{padding:8px;font-size:16px}
+    #newListForm button{margin-left:6px}
+    /* Selector deck */
+    #deck{display:none}
+    .bigCard{position:relative;text-align:center}
+    .bigCard img{max-width:90%;max-height:60vh;border-radius:8px}
+    .bigCard .caption{margin:10px 0;font-size:18px}
+    .bigCard .uploaderComment{font-style:italic;color:#555;margin-bottom:10px}
+    .deckControls{display:flex;justify-content:center;gap:40px;margin-top:20px}
+    .deckControls button{padding:14px 28px;font-size:18px;border:none;border-radius:50px;cursor:pointer}
+    .deckControls .want{background:#4caf50;color:#fff}
+    .deckControls .dont{background:#f44336;color:#fff}
+    #deck textarea{width:90%;max-width:400px;margin-top:10px}
+    .myList{max-width:250px;margin-left:20px}
+    .myList img{width:60px;height:60px;object-fit:cover;margin:2px;border:1px solid #ccc;border-radius:4px}
+</style>
 </head>
 <body>
 
-<!-- Login -->
-<div id="login">
-  <h2>Closet Swipe – Family Login</h2>
-  <form method="post" action="/login">
-    <select name="user">
-      <option value="mom">Mom (upload)</option>
-      <option value="alex">Alex</option>
-      <option value="ben">Ben</option>
-    </select>
-    <input type="password" name="password" placeholder="Password">
-    <button type="submit">Enter</button>
-  </form>
+<h1>CLOSET SELECT</h1>
+
+<!-- Landing -->
+<div class="menu" id="landing">
+    <button onclick="show('uploader')">Uploader's Menu</button>
+    <button onclick="show('selector')">Selector's Menu</button>
 </div>
 
-<!-- Mom upload -->
-<div id="momView" style="display:none">
-  <h2 style="text-align:center">Upload clothes</h2>
-  <form id="uploadForm" enctype="multipart/form-data" method="post" action="/upload">
+<!-- Uploader -->
+<div id="uploader">
+    <h2>Uploader's Menu</h2>
+
+    <!-- Recent photos -->
+    <div class="photo-strip" id="strip"></div>
+
+    <!-- Upload -->
     <div id="uploadArea">
-      <input type="file" name="photo" accept="image/*" required><br>
-      <input type="text" name="caption" placeholder="Optional caption"><br>
-      <button>Save</button>
+        <input type="file" id="fileInput" accept="image/*">
+        <br><textarea id="captionInput" placeholder="Optional caption"></textarea><br>
+        <button onclick="doUpload()">Upload</button>
     </div>
-  </form>
-  <h3 style="text-align:center">Send lists</h3>
-  <ul id="sendLists"></ul>
+
+    <!-- Lists -->
+    <div id="uLists">
+        <h3>All selectors' lists</h3>
+        <ul id="ulUl"></ul>
+    </div>
 </div>
 
-<!-- Son swipe -->
-<div id="sonView" style="display:none">
-  <div id="viewer">
-    <div class="card">
-      <img id="img"><div class="caption" id="cap"></div>
+<!-- Selector -->
+<div id="selector">
+    <h2>Selector's Menu</h2>
+
+    <!-- New / existing lists -->
+    <div id="newListForm">
+        <input id="listName" placeholder="New list name">
+        <button onclick="createList()">Create new list</button>
     </div>
-  </div>
-  <div class="controls">
-    <button class="no" onclick="vote('no')">✕</button>
-    <button class="yes" onclick="vote('yes')">✓</button>
-  </div>
-  <textarea id="comment" placeholder="Comment (optional)" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:260px"></textarea>
+
+    <div class="selLists" id="selLists"></div>
+</div>
+
+<!-- Deck -->
+<div id="deck">
+    <h3 id="deckTitle"></h3>
+    <div style="display:flex;justify-content:center">
+        <div class="bigCard">
+            <img id="bigImg"><br>
+            <div id="bigCap"></div>
+            <div id="bigUComment"></div>
+            <div class="deckControls">
+                <button class="want" onclick="vote('want')">I want it</button>
+                <button class="dont" onclick="vote('dont')">I don't want it</button>
+            </div>
+            <textarea id="comment" placeholder="Optional comment"></textarea>
+        </div>
+
+        <!-- side preview -->
+        <div class="myList">
+            <h4>My list</h4>
+            <div id="myPics"></div>
+        </div>
+    </div>
 </div>
 
 <script>
-let items=[], idx=0, user='{{ session.user }}';
-
-async function load(){
-  const res = await fetch('/api/items');
-  items = Object.entries(await res.json()).map(([id,data])=>({id,...data}));
-  idx = 0;
-  show();
+// ---------- util ----------
+function show(id){
+    ['landing','uploader','selector','deck'].forEach(x=>document.getElementById(x).style.display='none');
+    document.getElementById(id).style.display='block';
 }
-function show(){
-  if(idx>=items.length){document.body.innerHTML='<h1 style="text-align:center">All done!</h1>';return;}
-  const it=items[idx];
-  document.getElementById('img').src='/static/photos/'+it.id;
-  document.getElementById('cap').textContent=it.caption;
-}
-async function vote(decision){
-  const comment=document.getElementById('comment').value;
-  await fetch('/swipe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:items[idx].id,decision,comment})});
-  idx++; show(); document.getElementById('comment').value='';
-}
-function init(){
-  if(user==='mom'){
-    document.getElementById('login').style.display='none';
-    document.getElementById('momView').style.display='block';
-    buildSendLists();
-  }else if(['alex','ben'].includes(user)){
-    document.getElementById('login').style.display='none';
-    document.getElementById('sonView').style.display='block';
-    load();
-  }
-}
-function buildSendLists(){
-  fetch('/api/items').then(r=>r.json()).then(db=>{
-    const ul=document.getElementById('sendLists');
-    ul.innerHTML='';
-    ['alex','ben'].forEach(son=>{
-      const li=document.createElement('li');
-      const wanted=Object.entries(db).filter(([,d])=>d.votes[son]?.decision==='yes');
-      li.innerHTML=`<b>${son}</b>: `+(wanted.map(([id,d])=>d.caption||id).join(', ')||'—');
-      ul.appendChild(li);
+// ---------- uploader ----------
+async function refreshStrip(){
+    const res = await fetch('/api/items');
+    const items = await res.json();
+    const strip=document.getElementById('strip');
+    strip.innerHTML='';
+    items.forEach(it=>{
+        const img=document.createElement('img');
+        img.src=it.thumb;
+        img.onclick=()=>editCaption(it.id,it.caption);
+        strip.appendChild(img);
     });
-  });
 }
-init();
+async function editCaption(id,oldCap){
+    const cap=prompt("Edit caption",oldCap);
+    if(cap!==null){
+        await fetch('/api/caption/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({'caption':cap})});
+        refreshStrip();
+    }
+}
+async function doUpload(){
+    const file=document.getElementById('fileInput').files[0];
+    const cap=document.getElementById('captionInput').value;
+    if(!file) return alert('Pick a photo');
+    const fd=new FormData();
+    fd.append('photo',file);
+    fd.append('caption',cap);
+    await fetch('/upload',{method:'POST',body:fd});
+    document.getElementById('fileInput').value='';
+    document.getElementById('captionInput').value='';
+    refreshStrip();
+}
+async function refreshULists(){
+    const res=await fetch('/api/lists');
+    const lists=await res.json();
+    const ul=document.getElementById('ulUl');
+    ul.innerHTML='';
+    Object.keys(lists).forEach(name=>{
+        const li=document.createElement('li');
+        li.textContent=name;
+        li.onclick=()=>alert('List '+name+': '+Object.keys(lists[name]).length+' picks');
+        ul.appendChild(li);
+    });
+}
+// ---------- selector ----------
+let listName='', items=[], idx=0, myPicks={};
+async function refreshSelLists(){
+    const res=await fetch('/api/lists');
+    const lists=await res.json();
+    const div=document.getElementById('selLists');
+    div.innerHTML='';
+    Object.keys(lists).forEach(name=>{
+        const btn=document.createElement('button');
+        btn.textContent='Edit '+name;
+        btn.onclick=()=>openDeck(name);
+        div.appendChild(btn);
+    });
+}
+async function openDeck(name){
+    listName=name;
+    const res=await fetch('/api/items');
+    items=(await res.json()).filter(it=>!myPicks[it.id]);
+    idx=0;
+    show('deck');
+    document.getElementById('deckTitle').textContent='My list: '+name;
+    renderDeck();
+}
+function renderDeck(){
+    if(idx>=items.length){document.getElementById('bigImg').src='';document.getElementById('bigCap').textContent='All done!';return;}
+    const it=items[idx];
+    document.getElementById('bigImg').src='/static/photos/'+it.id;
+    document.getElementById('bigCap').textContent=it.caption;
+    document.getElementById('bigUComment').textContent='Uploader: '+it.caption;
+}
+async function vote(choice){
+    const comment=document.getElementById('comment').value;
+    const it=items[idx];
+    await fetch(`/api/list/${listName}/vote`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({item:it.id,choice,comment})
+    });
+    myPicks[it.id]=choice;
+    idx++;
+    renderDeck();
+    renderMyPics();
+}
+function renderMyPics(){
+    const box=document.getElementById('myPics');
+    box.innerHTML='';
+    items.filter(i=>myPicks[i.id]==='want').forEach(i=>{
+        const img=document.createElement('img');
+        img.src=i.thumb;
+        box.appendChild(img);
+    });
+}
+async function createList(){
+    const name=document.getElementById('listName').value.trim();
+    if(!name) return alert('Name required');
+    await fetch(`/api/list/${name}`,{method:'POST'});
+    document.getElementById('listName').value='';
+    refreshSelLists();
+}
+// init
+refreshStrip();
+refreshULists();
+refreshSelLists();
 </script>
 </body>
 </html>
