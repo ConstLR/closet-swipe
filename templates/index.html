@@ -17,6 +17,19 @@ h2 { position: relative; }
     padding: 5px 15px; font-size: 14px; text-transform: none; letter-spacing: 0;
     width: auto;
 }
+a.button-link {
+    display: block;
+    text-align: center;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 1.2em;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-decoration: none;
+    border-radius: var(--radius);
+}
 select{padding:.75em; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%233a3a3a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-13z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; padding-right: 2.5em!important}
 .page-container{max-width:1200px;margin:auto;padding:20px;display:none;}
 .section-box{background:var(--card);padding:1.5em;border-radius:var(--radius);border:1px solid var(--border-color);margin-bottom:2em;}
@@ -54,7 +67,7 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 .lds-ring div:nth-child(2){animation-delay:-.3s}
 .lds-ring div:nth-child(3){animation-delay:-.15s}
 @keyframes lds-ring{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-#toast-notification{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--primary);color:#fff;padding:15px 30px;border-radius:var(--radius);z-index:10000;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s,transform .3s;}
+#toast-notification{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--primary);color:#fff;padding:15px 30px;border-radius:var(--radius);z-index:10000;opacity:0;visibility:hidden;transition:all .5s cubic-bezier(0.68, -0.55, 0.27, 1.55);}
 #toast-notification.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
@@ -71,6 +84,7 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
     <h1>Sélection Garde-Robe</h1>
     <button data-target="uploader">Menu de l'Uploader</button>
     <button data-target="selector">Menu du Sélecteur</button>
+    <a href="/selections" class="button-link">Voir les sélections</a>
 </div>
 
 <div id="uploader" class="page-container">
@@ -121,7 +135,7 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 </div>
 
 <div id="deck" class="page-container">
-    <h2 id="deckTitle"><button class="back-btn" data-target="selector">← Retour</button>Vote</h2>
+    <h2 id="deckTitle"></h2>
     <div id="deckFlex">
         <div class="bigCard">
             <div id="deckContent">
@@ -136,7 +150,7 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
             <div id="deckFinished" style="display:none; padding: 4em 1em;">
                 <h3>🎉 Liste terminée !</h3>
                 <p>Tous les articles de cette collection ont été examinés.</p>
-                <button class="back-btn" data-target="selector" style="position:static; margin-top:2em;">Retour au choix des collections</button>
+                <button class="back-btn" data-target="selector" style="position:static; margin-top:2em; width:auto;">Retour au choix des collections</button>
             </div>
         </div>
         <div class="myList">
@@ -284,7 +298,8 @@ async function refreshSelectorLists() {
 async function setActiveList(listName) {
     activeListName = listName;
     document.querySelectorAll('#selLists button').forEach(btn => {
-        btn.style.border = btn.textContent === listName ? '2px solid var(--success)' : '1px solid var(--border-color)';
+        btn.style.border = btn.textContent === listName ? '2px solid var(--success)' : '1px solid var(--primary)';
+        btn.style.borderColor = btn.textContent === listName ? 'var(--success)' : 'var(--primary)';
     });
     
     const collections = await api.get('/api/collections');
@@ -363,22 +378,32 @@ function initialize() {
     document.body.addEventListener('click', (e) => {
         if (e.target.classList.contains('back-btn')) {
             show(e.target.dataset.target);
+            // Si on retourne au menu sélecteur, on cache la partie "choix de collection"
+            if (e.target.dataset.target === 'selector') {
+                dom.collectionSelectionBox.style.display = 'none';
+                document.querySelectorAll('#selLists button').forEach(btn => {
+                    btn.style.border = '1px solid var(--primary)';
+                });
+            }
         }
     });
 
     dom.landing.addEventListener('click', e => {
-        if (e.target.tagName === 'BUTTON') {
+        // We only care about button clicks and anchor tags styled as buttons
+        if (e.target.tagName === 'BUTTON' || e.target.classList.contains('button-link')) {
             const target = e.target.dataset.target;
-            show(target);
-            if (target === 'uploader') {
-                refreshCollectionsDropdown();
+            if (target) { // data-target is for JS-driven page changes
+                show(target);
+                if (target === 'uploader') {
+                    refreshCollectionsDropdown();
+                }
             }
+            // If it's a link (like the new button), the browser will handle navigation
         }
     });
 
     dom.createCollectionBtn.addEventListener('click', createCollection);
     dom.createListBtn.addEventListener('click', createList);
-
     dom.dropZone.addEventListener('click', () => dom.fileInput.click());
     dom.fileInput.addEventListener('change', () => handleFileUpload(dom.fileInput.files));
     dom.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dom.dropZone.classList.add('dragover'); });
