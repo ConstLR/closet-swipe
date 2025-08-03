@@ -5,17 +5,7 @@
 <title>Closet Select</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-:root{
-  --primary:#005f73;
-  --secondary:#0a9396;
-  --bg:#f1f5f9;
-  --card:#ffffff;
-  --text:#111827;
-  --danger:#ef4444;
-  --radius:12px;
-  --shadow:0 4px 12px rgba(0,0,0,.08);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-}
+:root{--primary:#005f73;--secondary:#0a9396;--bg:#f1f5f9;--card:#ffffff;--text:#111827;--danger:#ef4444;--radius:12px;--shadow:0 4px 12px rgba(0,0,0,.08);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
 body{margin:0;background:var(--bg);color:var(--text);}
 h1,h2,h3{margin:0 0 .5em;color:var(--primary);}
 button{cursor:pointer;border:none;border-radius:var(--radius);padding:.75em 1.5em;font-size:15px;font-weight:600;}
@@ -26,6 +16,7 @@ input[type=file],textarea{padding:.5em;border:1px solid #d1d5db;border-radius:va
 .photo-strip{display:flex;overflow-x:auto;gap:12px;padding:10px 0;}
 .photo-strip .thumb{flex:0 0 120px;position:relative;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
 .photo-strip img{width:120px;height:120px;object-fit:cover;}
+.photo-strip .cap{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;padding:2px 4px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .photo-strip .del{position:absolute;top:2px;right:2px;background:var(--danger);color:#fff;border-radius:50%;width:24px;height:24px;font-size:14px;line-height:24px;text-align:center;cursor:pointer;}
 #uploadArea{background:var(--card);padding:1.5em;border-radius:var(--radius);box-shadow:var(--shadow);margin:20px 0;}
 #uploadArea h3{margin-top:0;}
@@ -33,6 +24,7 @@ input[type=file],textarea{padding:.5em;border:1px solid #d1d5db;border-radius:va
 #uLists ul{list-style:none;padding:0;}
 #uLists li{margin-bottom:1em;}
 #uLists .listTitle{font-weight:700;margin-bottom:.4em;}
+#uLists a{color:var(--primary);text-decoration:none;}
 #uLists .miniStrip{display:flex;flex-wrap:wrap;gap:6px;}
 #uLists .miniStrip img{height:60px;border-radius:6px;box-shadow:var(--shadow);}
 #selector h2{margin-bottom:1em;}
@@ -53,24 +45,13 @@ input[type=file],textarea{padding:.5em;border:1px solid #d1d5db;border-radius:va
 .deckControls .dont{background:#ef4444;color:#fff;}
 .myList{flex:0 0 250px;background:var(--card);padding:1em;border-radius:var(--radius);box-shadow:var(--shadow);}
 .myList img{width:60px;height:60px;object-fit:cover;margin:2px;border-radius:6px;}
-/* ---------- loading spinner ---------- */
-#spinner{
-  position:fixed;top:0;left:0;width:100%;height:100%;
-  background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9999;
-}
-.lds-ring{
-  display:inline-block;position:relative;width:64px;height:64px;
-}
-.lds-ring div{
-  box-sizing:border-box;display:block;position:absolute;width:51px;height:51px;margin:6px;border:6px solid #fff;border-color:#fff transparent transparent transparent;border-radius:50%;animation:lds-ring 1.2s cubic-bezier(0.5,0,0.5,1) infinite;
-}
+#spinner{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9999;}
+.lds-ring{display:inline-block;position:relative;width:64px;height:64px;}
+.lds-ring div{box-sizing:border-box;display:block;position:absolute;width:51px;height:51px;margin:6px;border:6px solid #fff;border-color:#fff transparent transparent transparent;border-radius:50%;animation:lds-ring 1.2s cubic-bezier(0.5,0,0.5,1) infinite;}
 .lds-ring div:nth-child(1){animation-delay:-0.45s;}
 .lds-ring div:nth-child(2){animation-delay:-0.3s;}
 .lds-ring div:nth-child(3){animation-delay:-0.15s;}
-@keyframes lds-ring{
-  0%{transform:rotate(0deg);}
-  100%{transform:rotate(360deg);}
-}
+@keyframes lds-ring{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -79,65 +60,62 @@ input[type=file],textarea{padding:.5em;border:1px solid #d1d5db;border-radius:va
 
 <!-- Landing -->
 <div id="landing">
-    <button onclick="show('uploader')">UPLOADER'S MENU</button>
-    <button onclick="show('selector')">SELECTOR'S MENU</button>
+  <button onclick="show('uploader')">UPLOADER'S MENU</button>
+  <button onclick="show('selector')">SELECTOR'S MENU</button>
 </div>
 
 <!-- Uploader -->
 <div id="uploader">
-    <h2>UPLOADER'S MENU</h2>
+  <h2>UPLOADER'S MENU</h2>
 
-    <!-- Recent photos -->
-    <div class="photo-strip" id="strip"></div>
+  <div class="photo-strip" id="strip"></div>
 
-    <!-- Bulk upload -->
-    <div id="uploadArea">
-        <h3>Upload photos here</h3>
-        <form onsubmit="doBulkUpload(event)">
-            <input type="file" id="bulkFiles" multiple accept="image/*"><br>
-            <textarea id="bulkCaption" placeholder="Optional caption for all"></textarea><br>
-            <button>Upload</button>
-        </form>
-    </div>
+  <div id="uploadArea">
+    <h3>Upload photos here</h3>
+    <form onsubmit="doBulkUpload(event)">
+      <input type="file" id="bulkFiles" multiple accept="image/*"><br>
+      <textarea id="bulkCaption" placeholder="Optional caption for all"></textarea><br>
+      <button>Upload</button>
+    </form>
+  </div>
 
-    <!-- Lists -->
-    <div id="uLists">
-        <h3>All selectors' lists</h3>
-        <ul id="ulUl"></ul>
-    </div>
+  <div id="uLists">
+    <h3>All selectors' lists</h3>
+    <ul id="ulUl"></ul>
+  </div>
 </div>
 
 <!-- Selector -->
 <div id="selector">
-    <h2>SELECTOR'S MENU</h2>
+  <h2>SELECTOR'S MENU</h2>
 
-    <div id="newListForm">
-        <input id="listName" placeholder="List name">
-        <button onclick="createList()">Create new list</button>
-    </div>
+  <div id="newListForm">
+    <input id="listName" placeholder="List name">
+    <button onclick="createList()">Create new list</button>
+  </div>
 
-    <div class="selLists" id="selLists"></div>
+  <div class="selLists" id="selLists"></div>
 </div>
 
 <!-- Deck -->
 <div id="deck">
-    <h3 id="deckTitle"></h3>
-    <div id="deckFlex">
-        <div class="bigCard">
-            <img id="bigImg">
-            <div class="caption" id="bigCap"></div>
-            <div class="comment" id="bigComment"></div>
-            <div class="deckControls">
-                <button class="want" onclick="vote('want')">I want it</button>
-                <button class="dont" onclick="vote('dont')">I don't want it</button>
-            </div>
-            <textarea id="comment" placeholder="Optional comment"></textarea>
-        </div>
-        <div class="myList">
-            <h4>My selection</h4>
-            <div id="myPics"></div>
-        </div>
+  <h3 id="deckTitle"></h3>
+  <div id="deckFlex">
+    <div class="bigCard">
+      <img id="bigImg">
+      <div class="caption" id="bigCap"></div>
+      <div class="comment" id="bigComment"></div>
+      <div class="deckControls">
+        <button class="want" onclick="vote('want')">I want it</button>
+        <button class="dont" onclick="vote('dont')">I don't want it</button>
+      </div>
+      <textarea id="comment" placeholder="Optional comment"></textarea>
     </div>
+    <div class="myList">
+      <h4>My selection</h4>
+      <div id="myPics"></div>
+    </div>
+  </div>
 </div>
 
 <!-- Spinner -->
@@ -163,8 +141,10 @@ function refreshStrip(){
     items.forEach(it=>{
       const wrap=document.createElement('div');
       wrap.className='thumb';
-      wrap.innerHTML=`<img src="${it.thumb}">
-                      <div class="del" onclick="deleteFile('${it.id}')">×</div>`;
+      wrap.innerHTML=`
+        <img src="${it.thumb}">
+        <div class="del" onclick="deleteFile('${it.id}')">×</div>
+        <div class="cap">${it.caption||'—'}</div>`;
       wrap.onclick=(e)=>{if(!e.target.classList.contains('del'))editCaption(it.id,it.caption);};
       strip.appendChild(wrap);
     });
@@ -189,7 +169,7 @@ async function doBulkUpload(ev){
   if(!files.length){alert('Pick photos');return;}
   showSpinner(true);
   const fd=new FormData();
-  for(let i=0;i<files.length;i++) fd.append('photos',files[i]); // <- no duplicates
+  for(let i=0;i<files.length;i++) fd.append('photos',files[i]);
   fd.append('caption',caption);
   await fetch('/bulk_upload',{method:'POST',body:fd});
   document.getElementById('bulkFiles').value='';
@@ -204,12 +184,9 @@ async function refreshULists(){
   const lists=await res.json();
   const ul=document.getElementById('ulUl');
   ul.innerHTML='';
-  Object.entries(lists).forEach(([name,items])=>{
+  Object.keys(lists).forEach(name=>{
     const li=document.createElement('li');
-    li.innerHTML=`<div class="listTitle">${name}</div>
-                  <div class="miniStrip">
-                    ${Object.keys(items).map(id=>`<img src="/static/thumbs/${id}">`).join('')}
-                  </div>`;
+    li.innerHTML=`<a href="/list/${name}" style="font-weight:700;color:var(--primary)">${name}</a>`;
     ul.appendChild(li);
   });
 }
@@ -276,7 +253,6 @@ function renderMyPics(){
     box.appendChild(img);
   });
 }
-// init
 refreshStrip();
 refreshULists();
 refreshSelLists();
