@@ -1,72 +1,106 @@
-from flask import Flask, render_template, request, jsonify, redirect, session
+from flask import Flask, render_template, request, jsonify, send_from_directory
 import os, uuid, json, datetime
+from werkzeug.utils import secure_filename
+from PIL import Image
 
 app = Flask(__name__)
-app.secret_key = 'super-secret-change-me'
-UPLOAD_DIR = 'static/photos'
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.secret_key = 'any-secret-string'
 
-PASSWORD = 'family2025'  # one password for everybody
+# folders
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+PHOTO_DIR  = os.path.join(BASE_DIR, 'static', 'photos')
+THUMB_DIR  = os.path.join(BASE_DIR, 'static', 'thumbs')
+DB_FILE    = os.path.join(BASE_DIR, 'data.json')
+for d in (PHOTO_DIR, THUMB_DIR):
+    os.makedirs(d, exist_ok=True)
 
+ALLOWED = {'png','jpg','jpeg','gif','webp'}
+
+# ---------- helpers ----------
+def allowed(f): return '.' in f and f.rsplit('.',1)[1].lower() in ALLOWED
+def db_load():
+    if not os.path.exists(DB_FILE):
+        return {'items':{}, 'lists':{}}      # items -> {id:{cap,ts,path}, ...}
+    return json.load(open(DB_FILE, encoding='utf-8'))
+def db_save(d): json.dump(d, open(DB_FILE,'w',encoding='utf-8'), indent=2)
+
+def make_thumb(path):
+    name = os.path.basename(path)
+    tpath = os.path.join(THUMB_DIR, name)
+    if not os.path.exists(tpath):
+        img = Image.open(path)
+        img.thumbnail((300,300))
+        img.save(tpath)
+    return 'static/thumbs/' + name
+
+# ---------- routes ----------
 @app.route('/')
 def home():
     return render_template('index.html')
 
-@app.route('/login', methods=['POST'])
-def login():
-    if request.form['password'] == PASSWORD:
-        session['user'] = request.form['user']
-        return redirect('/')
-    return 'Wrong password', 403
+# ---- uploader: list of items ----
+@app.route('/api/items')
+def api_items():
+    data = db_load()
+    latest = sorted(data['items'].values(), key=lambda x: x['ts'], reverse=True)[:50]
+    return jsonify(latest)
 
-@app.route('/logout')
-def logout():
-    session.pop('user', None)
-    return redirect('/')
-
-# Mom uploads
+# ---- uploader: upload photo ----
 @app.route('/upload', methods=['POST'])
 def upload():
-    if session.get('user') != 'mom':
-        return 'Unauthorized', 403
     file = request.files['photo']
-    caption = request.form.get('caption', '')
-    name = str(uuid.uuid4()) + '.jpg'
-    file.save(os.path.join(UPLOAD_DIR, name))
-    add_item(name, caption)
-    return '', 204
+    caption = request.form.get('caption','').strip()
+    if file and allowed(file.filename):
+        ext   = secure_filename(file.filename).rsplit('.',1)[1]
+        fname = str(uuid.uuid4()) + '.' + ext
+        fpath = os.path.join(PHOTO_DIR, fname)
+        file.save(fpath)
+        thumb = make_thumb(fpath)
+        data = db_load()
+        data['items'][fname] = {'id':fname,'caption':caption,'ts':datetime.datetime.utcnow().isoformat(),'thumb':thumb}
+        db_save(data)
+        return jsonify({'status':'ok'})
+    return jsonify({'status':'fail'}),400
 
-# Sons swipe
-@app.route('/swipe', methods=['POST'])
-def swipe():
-    user = session.get('user')
-    if user in ['mom', None]:
-        return 'Unauthorized', 403
-    data = request.json
-    record_vote(data['id'], user, data['decision'], data.get('comment', ''))
-    return '', 204
+# ---- uploader: edit caption ----
+@app.route('/api/caption/<fid>', methods=['POST'])
+def api_caption(fid):
+    data = db_load()
+    if fid in data['items']:
+        data['items'][fid]['caption'] = request.json['caption']
+        db_save(data)
+    return jsonify({'status':'ok'})
 
-# API list
-@app.route('/api/items')
-def items():
-    return jsonify(load_db())
+# ---- selector: lists ----
+@app.route('/api/lists')
+def api_lists():
+    return jsonify(db_load()['lists'])
 
-# Helpers
-DB_FILE = 'data.json'
-def load_db():
-    if not os.path.exists(DB_FILE):
-        return {}
-    return json.load(open(DB_FILE, encoding='utf-8'))
-def save_db(obj):
-    json.dump(obj, open(DB_FILE, 'w', encoding='utf-8'), indent=2)
-def add_item(name, caption):
-    db = load_db()
-    db[name] = {'caption': caption, 'votes': {}}
-    save_db(db)
-def record_vote(item_id, user, decision, comment):
-    db = load_db()
-    db[item_id]['votes'][user] = {'decision': decision, 'comment': comment, 'time': str(datetime.datetime.utcnow())}
-    save_db(db)
+@app.route('/api/list/<name>', methods=['POST'])
+def api_create_list(name):
+    name = name.strip()
+    if not name: return jsonify({'status':'empty'}),400
+    data = db_load()
+    if name not in data['lists']:
+        data['lists'][name] = {}
+        db_save(data)
+    return jsonify({'status':'ok'})
+
+@app.route('/api/list/<name>/vote', methods=['POST'])
+def api_vote(name):
+    item   = request.json['item']
+    choice = request.json['choice']   # want / dont
+    comment= request.json.get('comment','')
+    data = db_load()
+    if name in data['lists']:
+        data['lists'][name][item] = {'choice':choice,'comment':comment,'ts':datetime.datetime.utcnow().isoformat()}
+        db_save(data)
+    return jsonify({'status':'ok'})
+
+# ---- static files ----
+@app.route('/static/photos/<path:filename>')
+def photos(filename):
+    return send_from_directory(PHOTO_DIR, filename)
 
 if __name__ == '__main__':
     app.run(debug=True)
