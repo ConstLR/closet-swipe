@@ -10,6 +10,13 @@ body{margin:0;padding:20px;background:var(--bg);color:var(--text);}
 h1,h2,h3{margin:0 0 1em;color:var(--primary);text-transform:uppercase;letter-spacing:1px;text-align:center;}
 button, input, select {font-family:inherit;font-size:15px;border:1px solid var(--border-color);border-radius:var(--radius);padding:.75em 1.5em;background:var(--card);box-sizing: border-box; width: 100%; margin-bottom: 10px;}
 button{cursor:pointer;}
+h2 { position: relative; }
+.back-btn {
+    position: absolute; top: -5px; left: 0;
+    background: transparent; border: 1px solid var(--primary); color: var(--primary);
+    padding: 5px 15px; font-size: 14px; text-transform: none; letter-spacing: 0;
+    width: auto;
+}
 select{padding:.75em; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%233a3a3a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-13z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; padding-right: 2.5em!important}
 .page-container{max-width:1200px;margin:auto;padding:20px;display:none;}
 .section-box{background:var(--card);padding:1.5em;border-radius:var(--radius);border:1px solid var(--border-color);margin-bottom:2em;}
@@ -40,12 +47,22 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 .myList h4{text-align:left;margin:0 0 1em 0;}
 .myList #myPics{display:flex;flex-wrap:wrap;gap:6px;}
 .myList img{width:75px;height:75px;object-fit:cover;border-radius:6px;}
-#spinner{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:9999;}
+#spinner{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;z-index:9999;}
+.lds-ring{display:inline-block;position:relative;width:64px;height:64px;}
+.lds-ring div{box-sizing:border-box;display:block;position:absolute;width:51px;height:51px;margin:6px;border:6px solid #fff;border-radius:50%;animation:lds-ring 1.2s cubic-bezier(0.5,0,0.5,1) infinite;border-color:#fff transparent transparent transparent;}
+.lds-ring div:nth-child(1){animation-delay:-.45s}
+.lds-ring div:nth-child(2){animation-delay:-.3s}
+.lds-ring div:nth-child(3){animation-delay:-.15s}
+@keyframes lds-ring{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+#toast-notification{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--primary);color:#fff;padding:15px 30px;border-radius:var(--radius);z-index:10000;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s,transform .3s;}
+#toast-notification.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
 
 <div id="spinner"><div class="lds-ring"><div></div><div></div><div></div><div></div></div></div>
+
+<div id="toast-notification"></div>
 
 <div id="landing">
     <div class="logo">
@@ -57,7 +74,7 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 </div>
 
 <div id="uploader" class="page-container">
-    <h2>Menu de l'Uploader</h2>
+    <h2><button class="back-btn" data-target="landing">← Retour</button>Menu de l'Uploader</h2>
     <div class="section-box">
         <h3>Créer une nouvelle collection</h3>
         <div id="newCollectionForm">
@@ -88,7 +105,7 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 </div>
 
 <div id="selector" class="page-container">
-    <h2>Menu du Sélecteur</h2>
+    <h2><button class="back-btn" data-target="landing">← Retour</button>Menu du Sélecteur</h2>
     <div class="section-box">
         <h3>1. Créez ou choisissez votre liste de sélection</h3>
         <div id="newListForm">
@@ -104,15 +121,22 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 </div>
 
 <div id="deck" class="page-container">
-    <h2 id="deckTitle"></h2>
+    <h2 id="deckTitle"><button class="back-btn" data-target="selector">← Retour</button>Vote</h2>
     <div id="deckFlex">
         <div class="bigCard">
-            <img id="bigImg" src="" alt="Article à sélectionner">
-            <div class="caption" id="bigCap"></div>
-            <textarea id="commentText" placeholder="Ajoutez un commentaire (optionnel)..."></textarea>
-            <div class="deckControls">
-                <button class="want" style="background:var(--success); color:#fff;">Je le veux</button>
-                <button class="dont" style="background:var(--danger); color:#fff;">Je n'en veux pas</button>
+            <div id="deckContent">
+                <img id="bigImg" src="" alt="Article à sélectionner">
+                <div class="caption" id="bigCap"></div>
+                <textarea id="commentText" placeholder="Ajoutez un commentaire (optionnel)..."></textarea>
+                <div class="deckControls">
+                    <button class="want" style="background:var(--success); color:#fff;">Je le veux</button>
+                    <button class="dont" style="background:var(--danger); color:#fff;">Je n'en veux pas</button>
+                </div>
+            </div>
+            <div id="deckFinished" style="display:none; padding: 4em 1em;">
+                <h3>🎉 Liste terminée !</h3>
+                <p>Tous les articles de cette collection ont été examinés.</p>
+                <button class="back-btn" data-target="selector" style="position:static; margin-top:2em;">Retour au choix des collections</button>
             </div>
         </div>
         <div class="myList">
@@ -129,6 +153,7 @@ let currentDeck = { listName: '', collectionName: '', items: [], votedIds: new S
 
 const dom = {
     spinner: document.getElementById('spinner'),
+    toast: document.getElementById('toast-notification'),
     landing: document.getElementById('landing'),
     uploader: document.getElementById('uploader'),
     selector: document.getElementById('selector'),
@@ -147,6 +172,8 @@ const dom = {
     collectionSelectionBox: document.getElementById('collectionSelectionBox'),
     collectionButtons: document.getElementById('collectionButtons'),
     deckTitle: document.getElementById('deckTitle'),
+    deckContent: document.getElementById('deckContent'),
+    deckFinished: document.getElementById('deckFinished'),
     bigImg: document.getElementById('bigImg'),
     bigCap: document.getElementById('bigCap'),
     commentText: document.getElementById('commentText'),
@@ -161,6 +188,16 @@ const show = (id) => {
     });
     const targetEl = document.getElementById(id);
     if(targetEl) targetEl.style.display = 'block';
+};
+
+const showSpinner = (visible) => dom.spinner.style.display = visible ? 'flex' : 'none';
+
+const showToast = (message) => {
+    dom.toast.textContent = message;
+    dom.toast.classList.add('show');
+    setTimeout(() => {
+        dom.toast.classList.remove('show');
+    }, 5000);
 };
 
 const api = {
@@ -184,6 +221,7 @@ async function createCollection() {
     if (!name) return alert('Le nom de la collection est requis.');
     await api.post('/api/collections', { name });
     dom.collectionNameInput.value = '';
+    showToast(`Collection "${name}" créée !`);
     refreshCollectionsDropdown();
 }
 
@@ -209,6 +247,7 @@ async function doUpload(e) {
     if (!collection) return alert('Veuillez sélectionner une collection.');
     if (filesToUpload.length === 0) return alert('Veuillez sélectionner des photos.');
     
+    showSpinner(true);
     const fd = new FormData();
     fd.append('collection', collection);
     filesToUpload.forEach(f => fd.append('photos', f));
@@ -219,6 +258,8 @@ async function doUpload(e) {
     filesToUpload = [];
     renderPreviews();
     dom.uploadCaption.value = '';
+    showSpinner(false);
+    showToast('Upload réussi !');
 }
 
 async function createList() {
@@ -258,6 +299,7 @@ async function setActiveList(listName) {
 }
 
 async function openDeck(listName, collectionName) {
+    showSpinner(true);
     currentDeck.listName = listName;
     currentDeck.collectionName = collectionName;
     
@@ -273,22 +315,20 @@ async function openDeck(listName, collectionName) {
     currentDeck.currentIndex = 0;
     
     show('deck');
-    dom.deckTitle.innerHTML = `Vote pour <strong>${collectionName}</strong> (liste : <strong>${listName}</strong>)`;
+    dom.deckTitle.innerHTML = `<button class="back-btn" data-target="selector">← Retour</button>Vote pour <strong>${collectionName}</strong> (liste : <strong>${listName}</strong>)`;
     renderMyPicks();
     renderCurrentDeckCard();
+    showSpinner(false);
 }
 
 function renderCurrentDeckCard() {
     if (currentDeck.currentIndex >= currentDeck.items.length) {
-        dom.bigImg.style.display = 'none';
-        dom.bigCap.textContent = '🎉 Tous les articles ont été examinés !';
-        dom.deckControls.style.display = 'none';
-        dom.commentText.style.display = 'none';
+        dom.deckContent.style.display = 'none';
+        dom.deckFinished.style.display = 'block';
         return;
     }
-    dom.bigImg.style.display = 'block';
-    dom.deckControls.style.display = 'grid';
-    dom.commentText.style.display = 'block';
+    dom.deckContent.style.display = 'block';
+    dom.deckFinished.style.display = 'none';
     const item = currentDeck.items[currentDeck.currentIndex];
     dom.bigImg.src = `/static/photos/${item.id}`;
     dom.bigCap.textContent = item.caption || 'Sans légende';
@@ -311,7 +351,6 @@ async function vote(choice) {
 async function renderMyPicks() {
     const picks = await api.get(`/api/list/${currentDeck.listName}/items`);
     dom.myPics.innerHTML = '';
-    // Flatten all items from all collections for the "My Picks" view
     Object.values(picks).flat().filter(p => p.choice === 'want').forEach(p => {
         const img = document.createElement('img');
         img.src = p.thumb;
@@ -321,6 +360,12 @@ async function renderMyPicks() {
 }
 
 function initialize() {
+    document.body.addEventListener('click', (e) => {
+        if (e.target.classList.contains('back-btn')) {
+            show(e.target.dataset.target);
+        }
+    });
+
     dom.landing.addEventListener('click', e => {
         if (e.target.tagName === 'BUTTON') {
             const target = e.target.dataset.target;
