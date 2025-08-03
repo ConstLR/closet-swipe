@@ -5,6 +5,8 @@ from PIL import Image
 
 app = Flask(__name__)
 app.secret_key = 'closet-secret'
+
+# folders
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PHOTO_DIR = os.path.join(BASE_DIR, 'static', 'photos')
 THUMB_DIR = os.path.join(BASE_DIR, 'static', 'thumbs')
