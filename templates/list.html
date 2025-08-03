@@ -3,41 +3,59 @@
 <head>
 <meta charset="utf-8">
 <title>{{ list_name }} – Closet Select</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-body{margin:0;background:#f1f5f9;font-family:system-ui;}
-h1{color:#005f73;text-align:center;margin:20px 0;}
-.back{position:fixed;top:10px;left:10px;background:#005f73;color:#fff;padding:8px 16px;border-radius:8px;text-decoration:none;}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;max-width:1200px;margin:auto;padding:20px;}
-.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 10px rgba(0,0,0,.1);}
-.card img{width:100%;height:200px;object-fit:cover;}
-.card .info{padding:10px;}
-.card .choice{font-weight:700;color:#22c55e;}
-.card .choice.dont{color:#ef4444;}
-.card .comment{font-style:italic;margin-top:4px;}
+:root{--primary:#005f73;--secondary:#0a9396;--bg:#f1f5f9;--card:#ffffff;--text:#111827;--danger:#ef4444;--radius:12px;--shadow:0 4px 12px rgba(0,0,0,.08);}
+body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+h1{color:var(--primary);text-align:center;margin:20px 0;}
+.back-link{position:absolute;top:20px;left:20px;background:var(--secondary);color:#fff;padding:8px 16px;border-radius:var(--radius);text-decoration:none;font-weight:600;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;max-width:1400px;margin:auto;padding:20px;}
+.card{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+.card img{width:100%;height:250px;object-fit:cover;display:block;}
+.card .info{padding:12px 15px;}
+.card .caption{font-weight:600;color:var(--text);margin-bottom:8px;}
+.card .choice{font-weight:700;padding:4px 8px;border-radius:6px;display:inline-block;margin-bottom:8px;}
+.card .choice.want{color:#fff;background:#22c55e;}
+.card .choice.dont{color:#fff;background:var(--danger);}
+.card .comment{font-style:italic;color:#555;margin-top:4px;background:#f8f9fa;padding:8px;border-radius:6px;font-size:14px;}
+#no-items{text-align:center;font-size:1.2em;color:#777;margin-top:50px;}
 </style>
 </head>
 <body>
-<a class="back" href="/">← Back</a>
+<a class="back-link" href="/">← Main Menu</a>
 <h1>List: {{ list_name }}</h1>
 <div class="grid" id="grid"></div>
+<p id="no-items" style="display:none;">No items have been selected for this list yet.</p>
+
 <script>
-fetch(`/api/list/{{ list_name }}/items`)
-  .then(r=>r.json())
-  .then(data=>{
-    const grid=document.getElementById('grid');
-    data.forEach(it=>{
-      const card=document.createElement('div');
-      card.className='card';
-      card.innerHTML=`
-        <img src="/static/photos/${it.id}">
-        <div class="info">
-          <div class="caption">${it.caption}</div>
-          <div class="choice ${it.choice}">${it.choice==='want'?'I want it':'I don’t want it'}</div>
-          ${it.comment?`<div class="comment">Comment: ${it.comment}</div>`:''}
-        </div>`;
-      grid.appendChild(card);
-    });
-  });
+document.addEventListener('DOMContentLoaded', () => {
+    fetch(`/api/list/{{ list_name }}/items`)
+      .then(r => r.json())
+      .then(data => {
+        const grid = document.getElementById('grid');
+        const noItemsMsg = document.getElementById('no-items');
+        
+        if (data.length === 0) {
+            noItemsMsg.style.display = 'block';
+            return;
+        }
+
+        data.sort((a,b) => a.choice.localeCompare(b.choice)); // Group wants and dont's
+
+        data.forEach(it => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <img src="/${it.thumb.replace('\\', '/')}" alt="${it.caption}">
+            <div class="info">
+              <div class="choice ${it.choice}">${it.choice === 'want' ? 'WANT' : 'DO NOT WANT'}</div>
+              <div class="caption">${it.caption || 'No caption'}</div>
+              ${it.comment ? `<div class="comment"><strong>Comment:</strong> ${it.comment}</div>` : ''}
+            </div>`;
+          grid.appendChild(card);
+        });
+      });
+});
 </script>
 </body>
 </html>
