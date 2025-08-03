@@ -1,30 +1,25 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Closet Select</title>
+<title>Sélection Garde-Robe</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-/* Base styles from previous step remain the same */
 :root{--primary:#3a3a3a;--bg:#f3efe9;--card:#ffffff;--text:#3a3a3a;--border-color:#e0e0e0;--radius:8px;--danger:#d9534f;--success:#5cb85c;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
 body{margin:0;padding:20px;background:var(--bg);color:var(--text);}
 h1,h2,h3{margin:0 0 1em;color:var(--primary);text-transform:uppercase;letter-spacing:1px;text-align:center;}
-button, input, select {font-family:inherit;font-size:15px;border:1px solid var(--border-color);border-radius:var(--radius);padding:.75em 1.5em;background:var(--card);}
+button, input, select {font-family:inherit;font-size:15px;border:1px solid var(--border-color);border-radius:var(--radius);padding:.75em 1.5em;background:var(--card);box-sizing: border-box; width: 100%; margin-bottom: 10px;}
 button{cursor:pointer;}
 select{padding:.75em; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%233a3a3a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-13z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; padding-right: 2.5em!important}
 .page-container{max-width:1200px;margin:auto;padding:20px;display:none;}
 .section-box{background:var(--card);padding:1.5em;border-radius:var(--radius);border:1px solid var(--border-color);margin-bottom:2em;}
 .form-group{margin-bottom:1em;}
 .form-group label{display:block;margin-bottom:.5em;font-weight:600;}
-#landing, #selLists { /* other styles */ }
-/* Other base styles from previous step */
 h1{font-size:1.2em;margin-bottom:2em;}
-button{cursor:pointer;}
 textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--border-color);border-radius:var(--radius);margin-bottom:.5em;resize:vertical;min-height:60px;font-family:inherit;}
-#landing{text-align:center;max-width:600px;margin:40px auto;}
+#landing{text-align:center;max-width:600px;margin:40px auto; display:block;}
 #landing .logo { margin-bottom: 2em; }
 #landing .logo svg { width: 80px; height: 80px; color: var(--primary); }
-#landing h1 { font-size: 1.2em; margin-bottom: 2em; }
 #landing button{display:block;width:100%;text-align:center;margin-bottom:1em;background:var(--primary);color:#fff;border:none;padding:1.2em;font-size:18px;text-transform:uppercase;letter-spacing:1px;}
 #dropZone{border:2px dashed var(--primary);padding:40px;text-align:center;border-radius:var(--radius);cursor:pointer;margin-bottom:1em;transition: background-color 0.2s ease;}
 #dropZone.dragover{background:#e9e9e9;}
@@ -32,14 +27,10 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 .photo-strip .thumb{flex:0 0 120px;position:relative;border-radius:var(--radius);overflow:hidden;}
 .photo-strip img{width:120px;height:120px;object-fit:cover;display:block;}
 .photo-strip .del{position:absolute;top:4px;right:4px;background:var(--danger);color:#fff;border-radius:50%;width:24px;height:24px;font-size:14px;line-height:24px;text-align:center;cursor:pointer;border:none;}
-#uLists ul{list-style:none;padding:0;margin:0;}
-#uLists li{padding: 1em; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;}
-#uLists li:last-child{border-bottom:none;}
-#uLists a{color:var(--primary);text-decoration:none;font-size:18px;font-weight:600;}
 #newListForm, #newCollectionForm {display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
 #newListForm input, #newCollectionForm input {flex:1 1 200px; background:#f8f8f8;}
-#newListForm button, #newCollectionForm button, #selLists button { background: var(--primary); color:#fff; border:none; }
-#selLists{display:flex;flex-wrap:wrap;gap:15px;}
+#newListForm button, #newCollectionForm button { background: var(--primary); color:#fff; border:none; flex-shrink: 0; width: auto;}
+#selLists, #collectionButtons {display:flex;flex-wrap:wrap;gap:15px;}
 #deckFlex{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;}
 .bigCard{flex:1 1 500px;text-align:center;}
 .bigCard img{max-width:100%;max-height:60vh;border-radius:var(--radius);border:1px solid var(--border-color);margin-bottom:1em;}
@@ -54,86 +45,132 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 </head>
 <body>
 
-<div id="spinner"></div>
+<div id="spinner"><div class="lds-ring"><div></div><div></div><div></div><div></div></div></div>
 
 <div id="landing">
+    <div class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M21.61,4.28a1,1,0,0,0-1,.13L18,6.38V4a1,1,0,0,0-1-1H7A1,1,0,0,0,6,4V6.38L3.39,4.41a1,1,0,0,0-1.28,1.54L5,8.51V9a3,3,0,0,0,2,2.82V20a1,1,0,0,0,1,1h6a1,1,0,0,0,1-1V11.82A3,3,0,0,0,17,9V8.51l2.89-2.56A1,1,0,0,0,21.61,4.28ZM15,20H9V12.2a4.94,4.94,0,0,1,3-1,4.94,4.94,0,0,1,3,1ZM12,9a3,3,0,0,0-3-3H8.33L10,4h4l1.67,2H15A3,3,0,0,0,12,9Z"/></svg>
     </div>
+    <h1>Sélection Garde-Robe</h1>
+    <button data-target="uploader">Menu de l'Uploader</button>
+    <button data-target="selector">Menu du Sélecteur</button>
+</div>
 
 <div id="uploader" class="page-container">
-    <h2>UPLOADER'S MENU</h2>
+    <h2>Menu de l'Uploader</h2>
     <div class="section-box">
-        <h3>CREATE NEW COLLECTION</h3>
+        <h3>Créer une nouvelle collection</h3>
         <div id="newCollectionForm">
-            <input id="collectionNameInput" placeholder="New collection name (e.g., 'Dresses')">
-            <button id="createCollectionBtn">Create Collection</button>
+            <input id="collectionNameInput" placeholder="Nom de la collection (ex: Robes d'été)">
+            <button id="createCollectionBtn">Créer la collection</button>
         </div>
     </div>
     <div class="section-box">
-        <h3>UPLOAD NEW PHOTOS</h3>
+        <h3>Uploader de nouvelles photos</h3>
         <form id="uploadForm">
             <div class="form-group">
-                <label for="collectionSelect">1. Choose Collection to Upload To</label>
+                <label for="collectionSelect">1. Choisissez une collection</label>
                 <select id="collectionSelect" required></select>
             </div>
             <div class="form-group">
-                <label>2. Select Photos</label>
+                <label>2. Sélectionnez les photos</label>
                 <div class="photo-strip" id="previewStrip"></div>
-                <div id="dropZone">Drag & drop photos here or <strong>click to browse</strong></div>
+                <div id="dropZone">Glissez-déposez les photos ici ou <strong>cliquez pour parcourir</strong></div>
                 <input type="file" id="fileInput" multiple style="display: none;">
             </div>
             <div class="form-group">
-                <label for="uploadCaption">3. Add a caption (optional)</label>
-                <textarea id="uploadCaption" placeholder="This caption will be applied to all uploaded photos"></textarea>
+                <label for="uploadCaption">3. Ajoutez une légende (optionnel)</label>
+                <textarea id="uploadCaption" placeholder="Cette légende sera appliquée à toutes les photos."></textarea>
             </div>
-            <button type="submit" style="background:var(--primary);color:#fff;">Upload Photos</button>
+            <button type="submit" style="background:var(--primary);color:#fff;">Uploader les photos</button>
         </form>
     </div>
 </div>
 
 <div id="selector" class="page-container">
-    <h2>SELECTOR'S MENU</h2>
+    <h2>Menu du Sélecteur</h2>
     <div class="section-box">
-        <h3>1. CREATE OR CHOOSE YOUR LIST</h3>
+        <h3>1. Créez ou choisissez votre liste de sélection</h3>
         <div id="newListForm">
-            <input id="listNameInput" placeholder="Enter a new list name">
-            <button id="createListBtn">Create New List</button>
+            <input id="listNameInput" placeholder="Entrez un nouveau nom de liste">
+            <button id="createListBtn">Créer la liste</button>
         </div>
         <div id="selLists" style="margin-top: 1em;"></div>
     </div>
     <div class="section-box" id="collectionSelectionBox" style="display:none;">
-        <h3>2. CHOOSE A COLLECTION TO VOTE ON</h3>
+        <h3>2. Choisissez une collection pour voter</h3>
         <div id="collectionButtons"></div>
     </div>
 </div>
 
 <div id="deck" class="page-container">
+    <h2 id="deckTitle"></h2>
+    <div id="deckFlex">
+        <div class="bigCard">
+            <img id="bigImg" src="" alt="Article à sélectionner">
+            <div class="caption" id="bigCap"></div>
+            <textarea id="commentText" placeholder="Ajoutez un commentaire (optionnel)..."></textarea>
+            <div class="deckControls">
+                <button class="want" style="background:var(--success); color:#fff;">Je le veux</button>
+                <button class="dont" style="background:var(--danger); color:#fff;">Je n'en veux pas</button>
+            </div>
+        </div>
+        <div class="myList">
+            <h4>Ma Sélection ("Oui")</h4>
+            <div id="myPics"></div>
+        </div>
     </div>
+</div>
 
 <script>
-// --- GLOBAL STATE ---
 let filesToUpload = [];
 let activeListName = '';
 let currentDeck = { listName: '', collectionName: '', items: [], votedIds: new Set(), currentIndex: 0 };
 
-// --- DOM ELEMENTS (add new ones) ---
 const dom = {
-    // ... all previous DOM elements
+    spinner: document.getElementById('spinner'),
+    landing: document.getElementById('landing'),
+    uploader: document.getElementById('uploader'),
+    selector: document.getElementById('selector'),
+    deck: document.getElementById('deck'),
     collectionNameInput: document.getElementById('collectionNameInput'),
     createCollectionBtn: document.getElementById('createCollectionBtn'),
     collectionSelect: document.getElementById('collectionSelect'),
+    previewStrip: document.getElementById('previewStrip'),
+    dropZone: document.getElementById('dropZone'),
+    fileInput: document.getElementById('fileInput'),
+    uploadForm: document.getElementById('uploadForm'),
+    uploadCaption: document.getElementById('uploadCaption'),
+    listNameInput: document.getElementById('listNameInput'),
+    createListBtn: document.getElementById('createListBtn'),
+    selectorLists: document.getElementById('selLists'),
     collectionSelectionBox: document.getElementById('collectionSelectionBox'),
     collectionButtons: document.getElementById('collectionButtons'),
-    // ... rest of the DOM elements
+    deckTitle: document.getElementById('deckTitle'),
+    bigImg: document.getElementById('bigImg'),
+    bigCap: document.getElementById('bigCap'),
+    commentText: document.getElementById('commentText'),
+    myPics: document.getElementById('myPics'),
+    deckControls: document.querySelector('.deckControls'),
 };
 
-// --- UTILS & API HELPERS (unchanged) ---
+const show = (id) => {
+    ['landing', 'uploader', 'selector', 'deck'].forEach(x => {
+        const el = document.getElementById(x);
+        if (el) el.style.display = 'none';
+    });
+    const targetEl = document.getElementById(id);
+    if(targetEl) targetEl.style.display = 'block';
+};
 
-// --- NEW & MODIFIED FUNCTIONS ---
+const api = {
+    get: (url) => fetch(url).then(r => r.json()),
+    post: (url, data) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+};
 
-// Populates the dropdown in the Uploader menu
 async function refreshCollectionsDropdown() {
     const collections = await api.get('/api/collections');
-    dom.collectionSelect.innerHTML = '<option value="">-- Please select a collection --</option>';
+    dom.collectionSelect.innerHTML = '<option value="">-- Veuillez sélectionner une collection --</option>';
     collections.forEach(name => {
         const option = document.createElement('option');
         option.value = name;
@@ -142,25 +179,38 @@ async function refreshCollectionsDropdown() {
     });
 }
 
-// Handles creation of a new collection
 async function createCollection() {
     const name = dom.collectionNameInput.value.trim();
-    if (!name) return alert('Collection name is required.');
+    if (!name) return alert('Le nom de la collection est requis.');
     await api.post('/api/collections', { name });
     dom.collectionNameInput.value = '';
-    refreshCollectionsDropdown(); // Refresh the dropdown after creating
+    refreshCollectionsDropdown();
 }
 
-// MODIFIED: Uploader's form submission
+function handleFileUpload(files) { filesToUpload.push(...Array.from(files)); renderPreviews(); }
+
+function renderPreviews() {
+    dom.previewStrip.innerHTML = '';
+    filesToUpload.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'thumb';
+            wrap.innerHTML = `<img src="${e.target.result}"><button class="del" data-index="${index}">×</button>`;
+            dom.previewStrip.appendChild(wrap);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
 async function doUpload(e) {
     e.preventDefault();
     const collection = dom.collectionSelect.value;
-    if (!collection) return alert('Please select a collection to upload to.');
-    if (filesToUpload.length === 0) return alert('Please select photos to upload.');
+    if (!collection) return alert('Veuillez sélectionner une collection.');
+    if (filesToUpload.length === 0) return alert('Veuillez sélectionner des photos.');
     
-    showSpinner(true);
     const fd = new FormData();
-    fd.append('collection', collection); // Add collection to form data
+    fd.append('collection', collection);
     filesToUpload.forEach(f => fd.append('photos', f));
     fd.append('caption', dom.uploadCaption.value);
     
@@ -169,48 +219,48 @@ async function doUpload(e) {
     filesToUpload = [];
     renderPreviews();
     dom.uploadCaption.value = '';
-    showSpinner(false);
 }
 
-// MODIFIED: Selector chooses a list first, then a collection
-async function setActiveList(listName) {
-    activeListName = listName;
-    // Highlight active list button (optional)
-    document.querySelectorAll('#selLists button').forEach(btn => {
-        btn.style.border = btn.textContent === listName ? '2px solid var(--success)' : '1px solid var(--border-color)';
-    });
-    
-    // Now show collections
-    const collections = await api.get('/api/collections');
-    dom.collectionButtons.innerHTML = '';
-    collections.forEach(name => {
-        const btn = document.createElement('button');
-        btn.textContent = name;
-        btn.onclick = () => openDeck(activeListName, name); // Pass both list and collection name
-        dom.collectionButtons.appendChild(btn);
-    });
-    dom.collectionSelectionBox.style.display = 'block';
+async function createList() {
+    const name = dom.listNameInput.value.trim();
+    if (!name) return alert('Le nom de la liste est requis.');
+    await api.post(`/api/list/${name}`);
+    dom.listNameInput.value = '';
+    refreshSelectorLists();
 }
 
-// MODIFIED: Refresh selector lists to set the active list
 async function refreshSelectorLists() {
     const lists = await api.get('/api/lists');
     dom.selectorLists.innerHTML = '';
     Object.keys(lists).forEach(name => {
         const btn = document.createElement('button');
         btn.textContent = name;
-        btn.onclick = () => setActiveList(name); // Set this as the active list
+        btn.onclick = () => setActiveList(name);
         dom.selectorLists.appendChild(btn);
     });
 }
 
-// MODIFIED: `openDeck` now takes a collection name
+async function setActiveList(listName) {
+    activeListName = listName;
+    document.querySelectorAll('#selLists button').forEach(btn => {
+        btn.style.border = btn.textContent === listName ? '2px solid var(--success)' : '1px solid var(--border-color)';
+    });
+    
+    const collections = await api.get('/api/collections');
+    dom.collectionButtons.innerHTML = '';
+    collections.forEach(name => {
+        const btn = document.createElement('button');
+        btn.textContent = name;
+        btn.onclick = () => openDeck(activeListName, name);
+        dom.collectionButtons.appendChild(btn);
+    });
+    dom.collectionSelectionBox.style.display = 'block';
+}
+
 async function openDeck(listName, collectionName) {
-    showSpinner(true);
     currentDeck.listName = listName;
     currentDeck.collectionName = collectionName;
     
-    // Fetch items for this specific collection
     const [collectionItems, allLists] = await Promise.all([
         api.get(`/api/collections/${collectionName}/items`),
         api.get('/api/lists')
@@ -219,31 +269,94 @@ async function openDeck(listName, collectionName) {
     const listVotes = allLists[listName] || {};
     currentDeck.votedIds = new Set(Object.keys(listVotes));
     
-    // Filter out items that have already been voted on IN THIS LIST
     currentDeck.items = collectionItems.filter(item => !currentDeck.votedIds.has(item.id));
     currentDeck.currentIndex = 0;
     
     show('deck');
-    dom.deckTitle.innerHTML = `Voting on <strong>${collectionName}</strong> for list: <strong>${listName}</strong>`;
+    dom.deckTitle.innerHTML = `Vote pour <strong>${collectionName}</strong> (liste : <strong>${listName}</strong>)`;
     renderMyPicks();
     renderCurrentDeckCard();
-    showSpinner(false);
 }
 
+function renderCurrentDeckCard() {
+    if (currentDeck.currentIndex >= currentDeck.items.length) {
+        dom.bigImg.style.display = 'none';
+        dom.bigCap.textContent = '🎉 Tous les articles ont été examinés !';
+        dom.deckControls.style.display = 'none';
+        dom.commentText.style.display = 'none';
+        return;
+    }
+    dom.bigImg.style.display = 'block';
+    dom.deckControls.style.display = 'grid';
+    dom.commentText.style.display = 'block';
+    const item = currentDeck.items[currentDeck.currentIndex];
+    dom.bigImg.src = `/static/photos/${item.id}`;
+    dom.bigCap.textContent = item.caption || 'Sans légende';
+    dom.commentText.value = '';
+}
 
-// --- INITIALIZATION (add new event listeners) ---
+async function vote(choice) {
+    const item = currentDeck.items[currentDeck.currentIndex];
+    await api.post(`/api/list/${currentDeck.listName}/vote`, {
+        item: item.id,
+        choice,
+        comment: dom.commentText.value
+    });
+    currentDeck.votedIds.add(item.id);
+    if (choice === 'want') { renderMyPicks(); }
+    currentDeck.currentIndex++;
+    renderCurrentDeckCard();
+}
+
+async function renderMyPicks() {
+    const picks = await api.get(`/api/list/${currentDeck.listName}/items`);
+    dom.myPics.innerHTML = '';
+    // Flatten all items from all collections for the "My Picks" view
+    Object.values(picks).flat().filter(p => p.choice === 'want').forEach(p => {
+        const img = document.createElement('img');
+        img.src = p.thumb;
+        img.title = p.caption;
+        dom.myPics.appendChild(img);
+    });
+}
+
 function initialize() {
-    // ... other initializers
+    dom.landing.addEventListener('click', e => {
+        if (e.target.tagName === 'BUTTON') {
+            const target = e.target.dataset.target;
+            show(target);
+            if (target === 'uploader') {
+                refreshCollectionsDropdown();
+            }
+        }
+    });
+
     dom.createCollectionBtn.addEventListener('click', createCollection);
+    dom.createListBtn.addEventListener('click', createList);
+
+    dom.dropZone.addEventListener('click', () => dom.fileInput.click());
+    dom.fileInput.addEventListener('change', () => handleFileUpload(dom.fileInput.files));
+    dom.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dom.dropZone.classList.add('dragover'); });
+    dom.dropZone.addEventListener('dragleave', () => { dom.dropZone.classList.remove('dragover'); });
+    dom.dropZone.addEventListener('drop', (e) => { e.preventDefault(); dom.dropZone.classList.remove('dragover'); handleFileUpload(e.dataTransfer.files); });
+    dom.uploadForm.addEventListener('submit', doUpload);
     
-    // Refresh collections dropdown when uploader menu is shown
-    const uploaderButton = document.querySelector('button[data-target="uploader"]');
-    uploaderButton.addEventListener('click', refreshCollectionsDropdown);
-    
-    // ... rest of the initialize function from previous step
+    dom.previewStrip.addEventListener('click', (e) => {
+        if (e.target.classList.contains('del')) {
+            const index = parseInt(e.target.dataset.index, 10);
+            filesToUpload.splice(index, 1);
+            renderPreviews();
+        }
+    });
+
+    dom.deckControls.addEventListener('click', e => {
+        if (e.target.classList.contains('want')) vote('want');
+        if (e.target.classList.contains('dont')) vote('dont');
+    });
+
+    refreshSelectorLists();
 }
 
-// Make sure to call initialize() on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', initialize);
 </script>
 </body>
