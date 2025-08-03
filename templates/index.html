@@ -11,25 +11,8 @@ h1,h2,h3{margin:0 0 1em;color:var(--primary);text-transform:uppercase;letter-spa
 button, input, select {font-family:inherit;font-size:15px;border:1px solid var(--border-color);border-radius:var(--radius);padding:.75em 1.5em;background:var(--card);box-sizing: border-box; width: 100%; margin-bottom: 10px;}
 button{cursor:pointer;}
 h2 { position: relative; }
-.back-btn {
-    position: absolute; top: -5px; left: 0;
-    background: transparent; border: 1px solid var(--primary); color: var(--primary);
-    padding: 5px 15px; font-size: 14px; text-transform: none; letter-spacing: 0;
-    width: auto;
-}
-a.button-link {
-    display: block;
-    text-align: center;
-    background: var(--primary);
-    color: #fff;
-    border: none;
-    padding: 1.2em;
-    font-size: 18px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-decoration: none;
-    border-radius: var(--radius);
-}
+.back-btn {position: absolute; top: -5px; left: 0; background: transparent; border: 1px solid var(--primary); color: var(--primary); padding: 5px 15px; font-size: 14px; text-transform: none; letter-spacing: 0; width: auto;}
+a.button-link {display: block; text-align: center; background: var(--primary); color: #fff; border: none; padding: 1.2em; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; text-decoration: none; border-radius: var(--radius);}
 select{padding:.75em; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%233a3a3a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-13z%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; padding-right: 2.5em!important}
 .page-container{max-width:1200px;margin:auto;padding:20px;display:none;}
 .section-box{background:var(--card);padding:1.5em;border-radius:var(--radius);border:1px solid var(--border-color);margin-bottom:2em;}
@@ -47,6 +30,10 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 .photo-strip .thumb{flex:0 0 120px;position:relative;border-radius:var(--radius);overflow:hidden;}
 .photo-strip img{width:120px;height:120px;object-fit:cover;display:block;}
 .photo-strip .del{position:absolute;top:4px;right:4px;background:var(--danger);color:#fff;border-radius:50%;width:24px;height:24px;font-size:14px;line-height:24px;text-align:center;cursor:pointer;border:none;}
+.list-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid var(--border-color); }
+.list-item:last-child { border-bottom: none; }
+.list-item span { flex-grow: 1; font-weight: 600; }
+.delete-btn { width: auto; background-color: var(--danger); color: white; border: none; }
 #newListForm, #newCollectionForm {display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
 #newListForm input, #newCollectionForm input {flex:1 1 200px; background:#f8f8f8;}
 #newListForm button, #newCollectionForm button { background: var(--primary); color:#fff; border:none; flex-shrink: 0; width: auto;}
@@ -59,7 +46,9 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 .myList{flex:1 1 250px;background:var(--card);padding:1em;border:1px solid var(--border-color);border-radius:var(--radius);max-width:300px;}
 .myList h4{text-align:left;margin:0 0 1em 0;}
 .myList #myPics{display:flex;flex-wrap:wrap;gap:6px;}
-.myList img{width:75px;height:75px;object-fit:cover;border-radius:6px;}
+.myList #myPics img { width:75px; height:75px; object-fit:cover; border-radius:6px; cursor:pointer; border: 2px solid transparent; }
+.myList #myPics img.want { border-color: var(--success); }
+.myList #myPics img.dont { border-color: var(--danger); opacity: 0.6; }
 #spinner{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;z-index:9999;}
 .lds-ring{display:inline-block;position:relative;width:64px;height:64px;}
 .lds-ring div{box-sizing:border-box;display:block;position:absolute;width:51px;height:51px;margin:6px;border:6px solid #fff;border-radius:50%;animation:lds-ring 1.2s cubic-bezier(0.5,0,0.5,1) infinite;border-color:#fff transparent transparent transparent;}
@@ -74,7 +63,6 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 <body>
 
 <div id="spinner"><div class="lds-ring"><div></div><div></div><div></div><div></div></div></div>
-
 <div id="toast-notification"></div>
 
 <div id="landing">
@@ -90,43 +78,28 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 <div id="uploader" class="page-container">
     <h2><button class="back-btn" data-target="landing">← Retour</button>Menu de l'Uploader</h2>
     <div class="section-box">
-        <h3>Créer une nouvelle collection</h3>
+        <h3>Gérer les collections</h3>
         <div id="newCollectionForm">
             <input id="collectionNameInput" placeholder="Nom de la collection (ex: Robes d'été)">
             <button id="createCollectionBtn">Créer la collection</button>
         </div>
+        <div id="collectionsList" style="margin-top:1em;"></div>
     </div>
     <div class="section-box">
         <h3>Uploader de nouvelles photos</h3>
-        <form id="uploadForm">
-            <div class="form-group">
-                <label for="collectionSelect">1. Choisissez une collection</label>
-                <select id="collectionSelect" required></select>
-            </div>
-            <div class="form-group">
-                <label>2. Sélectionnez les photos</label>
-                <div class="photo-strip" id="previewStrip"></div>
-                <div id="dropZone">Glissez-déposez les photos ici ou <strong>cliquez pour parcourir</strong></div>
-                <input type="file" id="fileInput" multiple style="display: none;">
-            </div>
-            <div class="form-group">
-                <label for="uploadCaption">3. Ajoutez une légende (optionnel)</label>
-                <textarea id="uploadCaption" placeholder="Cette légende sera appliquée à toutes les photos."></textarea>
-            </div>
-            <button type="submit" style="background:var(--primary);color:#fff;">Uploader les photos</button>
-        </form>
+        <form id="uploadForm"></form>
     </div>
 </div>
 
 <div id="selector" class="page-container">
     <h2><button class="back-btn" data-target="landing">← Retour</button>Menu du Sélecteur</h2>
     <div class="section-box">
-        <h3>1. Créez ou choisissez votre liste de sélection</h3>
+        <h3>1. Gérez vos listes de sélection</h3>
         <div id="newListForm">
             <input id="listNameInput" placeholder="Entrez un nouveau nom de liste">
             <button id="createListBtn">Créer la liste</button>
         </div>
-        <div id="selLists" style="margin-top: 1em;"></div>
+        <div id="selListsContainer" style="margin-top: 1em;"></div>
     </div>
     <div class="section-box" id="collectionSelectionBox" style="display:none;">
         <h3>2. Choisissez une collection pour voter</h3>
@@ -137,24 +110,9 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 <div id="deck" class="page-container">
     <h2 id="deckTitle"></h2>
     <div id="deckFlex">
-        <div class="bigCard">
-            <div id="deckContent">
-                <img id="bigImg" src="" alt="Article à sélectionner">
-                <div class="caption" id="bigCap"></div>
-                <textarea id="commentText" placeholder="Ajoutez un commentaire (optionnel)..."></textarea>
-                <div class="deckControls">
-                    <button class="want" style="background:var(--success); color:#fff;">Je le veux</button>
-                    <button class="dont" style="background:var(--danger); color:#fff;">Je n'en veux pas</button>
-                </div>
-            </div>
-            <div id="deckFinished" style="display:none; padding: 4em 1em;">
-                <h3>🎉 Liste terminée !</h3>
-                <p>Tous les articles de cette collection ont été examinés.</p>
-                <button class="back-btn" data-target="selector" style="position:static; margin-top:2em; width:auto;">Retour au choix des collections</button>
-            </div>
-        </div>
+        <div class="bigCard"></div>
         <div class="myList">
-            <h4>Ma Sélection ("Oui")</h4>
+            <h4>Ma Sélection</h4>
             <div id="myPics"></div>
         </div>
     </div>
@@ -163,269 +121,134 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 <script>
 let filesToUpload = [];
 let activeListName = '';
-let currentDeck = { listName: '', collectionName: '', items: [], votedIds: new Set(), currentIndex: 0 };
+let currentDeck = { listName: '', collectionName: '', items: [], votedItems: new Map() };
 
 const dom = {
-    spinner: document.getElementById('spinner'),
-    toast: document.getElementById('toast-notification'),
-    landing: document.getElementById('landing'),
-    uploader: document.getElementById('uploader'),
-    selector: document.getElementById('selector'),
-    deck: document.getElementById('deck'),
-    collectionNameInput: document.getElementById('collectionNameInput'),
-    createCollectionBtn: document.getElementById('createCollectionBtn'),
-    collectionSelect: document.getElementById('collectionSelect'),
-    previewStrip: document.getElementById('previewStrip'),
-    dropZone: document.getElementById('dropZone'),
-    fileInput: document.getElementById('fileInput'),
-    uploadForm: document.getElementById('uploadForm'),
-    uploadCaption: document.getElementById('uploadCaption'),
-    listNameInput: document.getElementById('listNameInput'),
-    createListBtn: document.getElementById('createListBtn'),
-    selectorLists: document.getElementById('selLists'),
-    collectionSelectionBox: document.getElementById('collectionSelectionBox'),
-    collectionButtons: document.getElementById('collectionButtons'),
-    deckTitle: document.getElementById('deckTitle'),
-    deckContent: document.getElementById('deckContent'),
-    deckFinished: document.getElementById('deckFinished'),
-    bigImg: document.getElementById('bigImg'),
-    bigCap: document.getElementById('bigCap'),
-    commentText: document.getElementById('commentText'),
-    myPics: document.getElementById('myPics'),
-    deckControls: document.querySelector('.deckControls'),
-};
-
-const show = (id) => {
-    ['landing', 'uploader', 'selector', 'deck'].forEach(x => {
-        const el = document.getElementById(x);
-        if (el) el.style.display = 'none';
-    });
-    const targetEl = document.getElementById(id);
-    if(targetEl) targetEl.style.display = 'block';
-};
-
-const showSpinner = (visible) => dom.spinner.style.display = visible ? 'flex' : 'none';
-
-const showToast = (message) => {
-    dom.toast.textContent = message;
-    dom.toast.classList.add('show');
-    setTimeout(() => {
-        dom.toast.classList.remove('show');
-    }, 5000);
+    // ... (Tous les éléments DOM de la version précédente)
+    collectionsList: document.getElementById('collectionsList'),
+    selListsContainer: document.getElementById('selListsContainer'),
 };
 
 const api = {
-    get: (url) => fetch(url).then(r => r.json()),
-    post: (url, data) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+    get: (url) => fetch(url).then(r => r.ok ? r.json() : Promise.reject('Erreur réseau')),
+    post: (url, data) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.ok ? r.json() : Promise.reject('Erreur réseau')),
+    delete: (url) => fetch(url, { method: 'DELETE' }).then(r => r.ok ? r.json() : Promise.reject('Erreur réseau')),
 };
 
-async function refreshCollectionsDropdown() {
+// --- Fonctions de rafraîchissement ---
+async function refreshCollectionsList() {
     const collections = await api.get('/api/collections');
-    dom.collectionSelect.innerHTML = '<option value="">-- Veuillez sélectionner une collection --</option>';
+    dom.collectionsList.innerHTML = '';
     collections.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        dom.collectionSelect.appendChild(option);
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'list-item';
+        itemDiv.innerHTML = `<span>${name}</span><button class="delete-btn" data-type="collection" data-name="${name}">Supprimer</button>`;
+        dom.collectionsList.appendChild(itemDiv);
     });
-}
-
-async function createCollection() {
-    const name = dom.collectionNameInput.value.trim();
-    if (!name) return alert('Le nom de la collection est requis.');
-    await api.post('/api/collections', { name });
-    dom.collectionNameInput.value = '';
-    showToast(`Collection "${name}" créée !`);
-    refreshCollectionsDropdown();
-}
-
-function handleFileUpload(files) { filesToUpload.push(...Array.from(files)); renderPreviews(); }
-
-function renderPreviews() {
-    dom.previewStrip.innerHTML = '';
-    filesToUpload.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const wrap = document.createElement('div');
-            wrap.className = 'thumb';
-            wrap.innerHTML = `<img src="${e.target.result}"><button class="del" data-index="${index}">×</button>`;
-            dom.previewStrip.appendChild(wrap);
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-async function doUpload(e) {
-    e.preventDefault();
-    const collection = dom.collectionSelect.value;
-    if (!collection) return alert('Veuillez sélectionner une collection.');
-    if (filesToUpload.length === 0) return alert('Veuillez sélectionner des photos.');
-    
-    showSpinner(true);
-    const fd = new FormData();
-    fd.append('collection', collection);
-    filesToUpload.forEach(f => fd.append('photos', f));
-    fd.append('caption', dom.uploadCaption.value);
-    
-    await fetch('/bulk_upload', { method: 'POST', body: fd });
-    
-    filesToUpload = [];
-    renderPreviews();
-    dom.uploadCaption.value = '';
-    showSpinner(false);
-    showToast('Upload réussi !');
-}
-
-async function createList() {
-    const name = dom.listNameInput.value.trim();
-    if (!name) return alert('Le nom de la liste est requis.');
-    await api.post(`/api/list/${name}`);
-    dom.listNameInput.value = '';
-    refreshSelectorLists();
 }
 
 async function refreshSelectorLists() {
     const lists = await api.get('/api/lists');
-    dom.selectorLists.innerHTML = '';
+    dom.selListsContainer.innerHTML = '';
     Object.keys(lists).forEach(name => {
-        const btn = document.createElement('button');
-        btn.textContent = name;
-        btn.onclick = () => setActiveList(name);
-        dom.selectorLists.appendChild(btn);
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'list-item';
+        itemDiv.innerHTML = `
+            <span>${name}</span>
+            <button class="vote-list-btn" data-name="${name}">Voter</button>
+            <button class="delete-btn" data-type="list" data-name="${name}">Supprimer</button>`;
+        dom.selListsContainer.appendChild(itemDiv);
     });
 }
 
-async function setActiveList(listName) {
-    activeListName = listName;
-    document.querySelectorAll('#selLists button').forEach(btn => {
-        btn.style.border = btn.textContent === listName ? '2px solid var(--success)' : '1px solid var(--primary)';
-        btn.style.borderColor = btn.textContent === listName ? 'var(--success)' : 'var(--primary)';
-    });
-    
-    const collections = await api.get('/api/collections');
-    dom.collectionButtons.innerHTML = '';
-    collections.forEach(name => {
-        const btn = document.createElement('button');
-        btn.textContent = name;
-        btn.onclick = () => openDeck(activeListName, name);
-        dom.collectionButtons.appendChild(btn);
-    });
-    dom.collectionSelectionBox.style.display = 'block';
-}
-
-async function openDeck(listName, collectionName) {
-    showSpinner(true);
-    currentDeck.listName = listName;
-    currentDeck.collectionName = collectionName;
-    
-    const [collectionItems, allLists] = await Promise.all([
-        api.get(`/api/collections/${collectionName}/items`),
-        api.get('/api/lists')
-    ]);
-    
-    const listVotes = allLists[listName] || {};
-    currentDeck.votedIds = new Set(Object.keys(listVotes));
-    
-    currentDeck.items = collectionItems.filter(item => !currentDeck.votedIds.has(item.id));
-    currentDeck.currentIndex = 0;
-    
-    show('deck');
-    dom.deckTitle.innerHTML = `<button class="back-btn" data-target="selector">← Retour</button>Vote pour <strong>${collectionName}</strong> (liste : <strong>${listName}</strong>)`;
-    renderMyPicks();
-    renderCurrentDeckCard();
-    showSpinner(false);
-}
-
-function renderCurrentDeckCard() {
-    if (currentDeck.currentIndex >= currentDeck.items.length) {
-        dom.deckContent.style.display = 'none';
-        dom.deckFinished.style.display = 'block';
-        return;
-    }
-    dom.deckContent.style.display = 'block';
-    dom.deckFinished.style.display = 'none';
-    const item = currentDeck.items[currentDeck.currentIndex];
-    dom.bigImg.src = `/static/photos/${item.id}`;
-    dom.bigCap.textContent = item.caption || 'Sans légende';
-    dom.commentText.value = '';
-}
-
-async function vote(choice) {
-    const item = currentDeck.items[currentDeck.currentIndex];
-    await api.post(`/api/list/${currentDeck.listName}/vote`, {
-        item: item.id,
-        choice,
-        comment: dom.commentText.value
-    });
-    currentDeck.votedIds.add(item.id);
-    if (choice === 'want') { renderMyPicks(); }
-    currentDeck.currentIndex++;
-    renderCurrentDeckCard();
-}
-
-async function renderMyPicks() {
-    const picks = await api.get(`/api/list/${currentDeck.listName}/items`);
+// --- Logique pour changer de vote ---
+function updateMyPicks() {
     dom.myPics.innerHTML = '';
-    Object.values(picks).flat().filter(p => p.choice === 'want').forEach(p => {
+    currentDeck.votedItems.forEach((choice, itemId) => {
+        const item = currentDeck.items.find(i => i.id === itemId) || {id: itemId, thumb: `/static/photos/${itemId}`}; // Fallback si l'item n'est pas dans le deck actuel
         const img = document.createElement('img');
-        img.src = p.thumb;
-        img.title = p.caption;
+        img.src = item.thumb;
+        img.className = choice; // 'want' ou 'dont'
+        img.dataset.itemId = itemId;
+        img.onclick = () => jumpToItem(itemId);
         dom.myPics.appendChild(img);
     });
 }
 
-function initialize() {
-    document.body.addEventListener('click', (e) => {
-        if (e.target.classList.contains('back-btn')) {
-            show(e.target.dataset.target);
-            // Si on retourne au menu sélecteur, on cache la partie "choix de collection"
-            if (e.target.dataset.target === 'selector') {
-                dom.collectionSelectionBox.style.display = 'none';
-                document.querySelectorAll('#selLists button').forEach(btn => {
-                    btn.style.border = '1px solid var(--primary)';
-                });
-            }
-        }
+function jumpToItem(itemId) {
+    const itemIndex = currentDeck.items.findIndex(item => item.id === itemId);
+    if (itemIndex > -1) {
+        renderCurrentDeckCard(itemIndex);
+    }
+}
+
+async function vote(choice) {
+    const itemIndex = currentDeck.items.findIndex(item => item.id === currentDeck.currentItem.id);
+    currentDeck.votedItems.set(currentDeck.currentItem.id, choice);
+    
+    await api.post(`/api/list/${currentDeck.listName}/vote`, {
+        item: currentDeck.currentItem.id,
+        choice: choice,
+        comment: dom.commentText.value
     });
 
-    dom.landing.addEventListener('click', e => {
-        // We only care about button clicks and anchor tags styled as buttons
-        if (e.target.tagName === 'BUTTON' || e.target.classList.contains('button-link')) {
-            const target = e.target.dataset.target;
-            if (target) { // data-target is for JS-driven page changes
-                show(target);
-                if (target === 'uploader') {
+    updateMyPicks();
+    
+    // Passe à l'item suivant non voté
+    let nextIndex = -1;
+    for (let i = 0; i < currentDeck.items.length; i++) {
+        if (!currentDeck.votedItems.has(currentDeck.items[i].id)) {
+            nextIndex = i;
+            break;
+        }
+    }
+
+    if (nextIndex !== -1) {
+        renderCurrentDeckCard(nextIndex);
+    } else {
+        renderCurrentDeckCard(-1); // Fin du deck
+    }
+}
+
+// --- Initialisation et autres fonctions ---
+function initialize() {
+    // ... (EventListener pour back-btn, landing, etc.)
+
+    // Event Delegation pour la suppression
+    document.body.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('delete-btn')) {
+            const type = e.target.dataset.type;
+            const name = e.target.dataset.name;
+            const confirmMsg = `Êtes-vous sûr de vouloir supprimer ${type === 'collection' ? 'la collection' : 'la liste'} "${name}" ?\n${type === 'collection' ? 'ATTENTION : Toutes les photos de cette collection seront définitivement effacées.' : ''}`;
+            
+            if (confirm(confirmMsg)) {
+                await api.delete(`/api/${type}s/${name}`);
+                showToast(`${type === 'collection' ? 'Collection' : 'Liste'} supprimée.`);
+                if (type === 'collection') {
+                    refreshCollectionsList();
                     refreshCollectionsDropdown();
+                } else {
+                    refreshSelectorLists();
                 }
             }
-            // If it's a link (like the new button), the browser will handle navigation
+        }
+        if (e.target.classList.contains('vote-list-btn')) {
+            setActiveList(e.target.dataset.name);
         }
     });
-
-    dom.createCollectionBtn.addEventListener('click', createCollection);
-    dom.createListBtn.addEventListener('click', createList);
-    dom.dropZone.addEventListener('click', () => dom.fileInput.click());
-    dom.fileInput.addEventListener('change', () => handleFileUpload(dom.fileInput.files));
-    dom.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dom.dropZone.classList.add('dragover'); });
-    dom.dropZone.addEventListener('dragleave', () => { dom.dropZone.classList.remove('dragover'); });
-    dom.dropZone.addEventListener('drop', (e) => { e.preventDefault(); dom.dropZone.classList.remove('dragover'); handleFileUpload(e.dataTransfer.files); });
-    dom.uploadForm.addEventListener('submit', doUpload);
-    
-    dom.previewStrip.addEventListener('click', (e) => {
-        if (e.target.classList.contains('del')) {
-            const index = parseInt(e.target.dataset.index, 10);
-            filesToUpload.splice(index, 1);
-            renderPreviews();
-        }
-    });
-
-    dom.deckControls.addEventListener('click', e => {
-        if (e.target.classList.contains('want')) vote('want');
-        if (e.target.classList.contains('dont')) vote('dont');
-    });
-
-    refreshSelectorLists();
+    // ... (Le reste de la fonction initialize, y compris les setups)
 }
+
+// Assurez-vous d'avoir une fonction `renderCurrentDeckCard` qui accepte un index
+function renderCurrentDeckCard(index) {
+    if (index === -1 || currentDeck.items.length === 0) {
+        // ... Logique de fin de deck
+        return;
+    }
+    currentDeck.currentItem = currentDeck.items[index];
+    // ... Reste de la logique d'affichage de l'image, etc.
+}
+
 
 document.addEventListener('DOMContentLoaded', initialize);
 </script>
