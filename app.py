@@ -20,11 +20,9 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 def db_load():
     if not os.path.exists(DB_FILE):
-        # NEW: Initialize with a collections key
         return {'items': {}, 'lists': {}, 'collections': {}}
     with open(DB_FILE, 'r', encoding='utf-8') as f:
         data = json.load(f)
-        # Ensure collections key exists for older data
         if 'collections' not in data:
             data['collections'] = {}
         return data
@@ -33,7 +31,6 @@ def db_save(data):
     with open(DB_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2)
 
-# (Helper functions like is_allowed, make_thumb remain the same)
 def is_allowed(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -49,7 +46,6 @@ def make_thumb(path):
             return None
     return os.path.join('static', 'thumbs', name).replace('\\', '/')
 
-
 # --- Main Routes ---
 @app.route('/')
 def home():
@@ -60,8 +56,6 @@ def list_page(name):
     return render_template('list.html', list_name=name)
 
 # --- API Routes ---
-
-# NEW: Endpoints to manage collections
 @app.route('/api/collections', methods=['GET', 'POST'])
 def api_collections():
     data = db_load()
@@ -71,26 +65,23 @@ def api_collections():
             data['collections'][collection_name] = {}
             db_save(data)
         return jsonify({'status': 'ok'})
-    
-    # GET request
     return jsonify(list(data['collections'].keys()))
 
-# NEW: Get items for a specific collection
 @app.route('/api/collections/<name>/items')
 def api_collection_items(name):
     data = db_load()
     collection_items = [item for item in data['items'].values() if item.get('collection') == name]
     return jsonify(sorted(collection_items, key=lambda x: x.get('ts', ''), reverse=True))
 
-# MODIFIED: Bulk upload now requires a collection
 @app.route('/bulk_upload', methods=['POST'])
 def bulk_upload():
     files = request.files.getlist('photos')
     caption = request.form.get('caption', '')
-    collection = request.form.get('collection', '') # Collection name is now required
+    collection = request.form.get('collection', '')
 
     if not collection:
-        return jsonify({'status': 'error', 'message': 'Collection is required.'}), 400
+        # Translated error message
+        return jsonify({'status': 'error', 'message': 'Une collection est requise.'}), 400
 
     data = db_load()
     saved_count = 0
@@ -108,16 +99,14 @@ def bulk_upload():
                     'caption': caption, 
                     'ts': datetime.datetime.utcnow().isoformat(), 
                     'thumb': thumb_url,
-                    'collection': collection  # Associate item with collection
+                    'collection': collection
                 }
                 saved_count += 1
     
     if saved_count > 0:
         db_save(data)
-        
     return jsonify({'status': 'ok', 'count': saved_count})
 
-# MODIFIED: api_list_items now groups results by collection
 @app.route('/api/list/<name>/items')
 def api_list_items(name):
     data = db_load()
@@ -125,7 +114,6 @@ def api_list_items(name):
     all_lists = data.get('lists', {})
     current_picks = all_lists.get(name, {})
     
-    # Group results by collection name
     grouped_results = defaultdict(list)
     
     for fid, vote_info in current_picks.items():
@@ -134,7 +122,6 @@ def api_list_items(name):
             item_data.update(vote_info)
             item_collection = item_data.get('collection', 'Uncategorized')
             
-            # "Also wanted on" logic
             also_wanted_in = []
             if vote_info['choice'] == 'want':
                 for other_list_name, other_picks in all_lists.items():
@@ -146,7 +133,7 @@ def api_list_items(name):
             
     return jsonify(grouped_results)
 
-# (Other routes like /api/delete, /api/caption, /api/lists, /api/list/name remain mostly the same)
+# (Other routes are unchanged)
 @app.route('/api/delete/<fid>', methods=['POST'])
 def api_delete(fid):
     data = db_load()
