@@ -5,7 +5,17 @@
 <title>Closet Select</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-:root{--primary:#005f73;--secondary:#0a9396;--bg:#f1f5f9;--card:#fff;--text:#111827;--danger:#ef4444;--radius:12px;--shadow:0 4px 12px rgba(0,0,0,.08);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+:root{
+  --primary:#005f73;
+  --secondary:#0a9396;
+  --bg:#f1f5f9;
+  --card:#ffffff;
+  --text:#111827;
+  --danger:#ef4444;
+  --radius:12px;
+  --shadow:0 4px 12px rgba(0,0,0,.08);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
 body{margin:0;background:var(--bg);color:var(--text);}
 h1,h2,h3{margin:0 0 .5em;color:var(--primary);}
 button{cursor:pointer;border:none;border-radius:var(--radius);padding:.75em 1.5em;font-size:15px;font-weight:600;}
@@ -47,7 +57,7 @@ input[type=file],textarea{padding:.5em;border:1px solid #d1d5db;border-radius:va
 .deckControls .dont{background:#ef4444;color:#fff;}
 .myList{flex:0 0 250px;background:var(--card);padding:1em;border-radius:var(--radius);box-shadow:var(--shadow);}
 .myList img{width:60px;height:60px;object-fit:cover;margin:2px;border-radius:6px;}
-#spinner{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9999;}
+#spinner{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0.35);display:none;align-items:center;justify-content:center;z-index:9999;}
 .lds-ring{display:inline-block;position:relative;width:64px;height:64px;}
 .lds-ring div{box-sizing:border-box;display:block;position:absolute;width:51px;height:51px;margin:6px;border:6px solid #fff;border-color:#fff transparent transparent transparent;border-radius:50%;animation:lds-ring 1.2s cubic-bezier(0.5,0,0.5,1) infinite;}
 .lds-ring div:nth-child(1){animation-delay:-0.45s;}
@@ -75,12 +85,9 @@ input[type=file],textarea{padding:.5em;border:1px solid #d1d5db;border-radius:va
   <div id="uploadArea">
     <h3>Upload photos here</h3>
     <form id="dropForm" onsubmit="doDropUpload(event)">
-      <div id="dropZone"
-           ondrop="handleDrop(event)"
-           ondragover="handleDragOver(event)"
-           ondragleave="handleDragLeave(event)">
+      <div id="dropZone" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
         Drag & drop or <strong>click to browse</strong><br>
-        <input type="file" id="dropFiles" multiple accept="image/*" style="display:none;">
+        <input type="file" id="dropFiles" multiple webkitdirectory accept="image/*" style="display:none;">
       </div>
       <textarea id="dropCaption" placeholder="Optional caption for all"></textarea><br>
       <button type="submit">Upload</button>
@@ -150,25 +157,28 @@ function handleDragLeave(){ dropZone.classList.remove('dragover'); }
 function handleDrop(e){
   e.preventDefault();
   dropZone.classList.remove('dragover');
-  dropFiles.files = e.dataTransfer.files;
+  const files = e.dataTransfer.files;
+  handleFiles(files);
 }
-dropZone.addEventListener('click', () => dropFiles.click());
 
-async function doDropUpload(ev){
-  ev.preventDefault();
-  const files = dropFiles.files;
-  const caption = document.getElementById('dropCaption').value;
-  if(!files.length){alert('Pick photos');return;}
-  showSpinner(true);
-  const fd = new FormData();
-  for(let i=0;i<files.length;i++) fd.append('photos',files[i]);
-  fd.append('caption',caption);
-  await fetch('/bulk_upload',{method:'POST',body:fd});
-  dropFiles.value='';
-  document.getElementById('dropCaption').value='';
-  refreshStrip(); refreshULists();
-  showSpinner(false);
+function handleFiles(files) {
+  const previewsContainer = document.getElementById('previewsContainer');
+  previewsContainer.innerHTML = ''; // Clear previous previews
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.maxWidth = "120px";
+      previewsContainer.appendChild(img);
+    });
+    reader.readAsDataURL(file);
+  });
 }
+
+dropZone.addEventListener('dragover', handleDragOver);
+dropZone.addEventListener('dragleave', handleDragLeave);
+dropZone.addEventListener('drop', handleDrop);
 
 /* ---------- uploader ---------- */
 function refreshStrip(){
@@ -198,6 +208,21 @@ async function deleteFile(id){
   if(!confirm('Delete this photo?')) return;
   await fetch('/api/delete/'+id,{method:'POST'});
   refreshStrip(); refreshULists();
+}
+async function doDropUpload(ev){
+  ev.preventDefault();
+  const files = dropFiles.files;
+  const caption = document.getElementById('dropCaption').value;
+  if(!files.length){alert('Pick photos');return;}
+  showSpinner(true);
+  const fd = new FormData();
+  files.forEach(f => fd.append('photos',f)); // each file once
+  fd.append('caption',caption);
+  await fetch('/bulk_upload',{method:'POST',body:fd});
+  dropFiles.value='';
+  document.getElementById('dropCaption').value='';
+  refreshStrip(); refreshULists();
+  showSpinner(false);
 }
 
 /* ---------- lists ---------- */
@@ -235,7 +260,7 @@ let listName='', items=[], idx=0, myPicks={};
 async function openDeck(name){
   listName=name;
   const res=await fetch('/api/items');
-  items=(await res.json()).filter(it=>!myPicks[it.id]);
+  items=(await res.json()).filter(it => !myPicks[it.id]);
   idx=0;
   show('deck');
   document.getElementById('deckTitle').textContent=`My list : ${name}`;
@@ -254,7 +279,7 @@ function renderDeck(){
   document.getElementById('bigComment').textContent='comment from uploader: '+it.caption;
 }
 async function vote(choice){
-  const comment=document.getElementById('comment').value;
+  const comment = document.getElementById('comment').value;
   const it=items[idx];
   await fetch(`/api/list/${listName}/vote`,{
     method:'POST',
@@ -270,7 +295,7 @@ function renderMyPics(){
   const box=document.getElementById('myPics');
   box.innerHTML='';
   items.filter(i=>myPicks[i.id]==='want').forEach(i=>{
-    const img=document.createElement('img');
+    const img = document.createElement('img');
     img.src=i.thumb;
     box.appendChild(img);
   });
