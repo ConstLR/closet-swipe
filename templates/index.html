@@ -15,12 +15,11 @@ textarea{resize:vertical;min-height:60px;}
 #landing{display:flex;justify-content:center;gap:40px;margin-top:40px;}
 #landing button{background:var(--primary);color:#fff;padding:1.2em 2.4em;font-size:18px;}
 #uploader,#selector,#deck{max-width:1100px;margin:auto;padding:20px;display:none;}
-#dropZone{border:2px dashed var(--primary);padding:40px;text-align:center;border-radius:var(--radius);cursor:pointer;margin-bottom:1em;}
+#dropZone{border:2px dashed var(--primary);padding:40px;text-align:center;border-radius:var(--radius);cursor:pointer;margin-bottom:1em;transition: background-color 0.2s ease;}
 #dropZone.dragover{background:#e0f2fe;}
-.photo-strip{display:flex;overflow-x:auto;gap:12px;padding:12px 0;min-height:120px;background:#e9ecef;border-radius:var(--radius);margin-bottom:1em;}
+.photo-strip{display:flex;overflow-x:auto;gap:12px;padding:12px;min-height:120px;background:#e9ecef;border-radius:var(--radius);margin-bottom:1em;}
 .photo-strip .thumb{flex:0 0 120px;position:relative;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
 .photo-strip img{width:120px;height:120px;object-fit:cover;display:block;}
-.photo-strip .cap{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;padding:2px 4px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .photo-strip .del{position:absolute;top:4px;right:4px;background:var(--danger);color:#fff;border-radius:50%;width:24px;height:24px;font-size:14px;line-height:24px;text-align:center;cursor:pointer;border:none;}
 #uploadArea{background:var(--card);padding:1.5em;border-radius:var(--radius);box-shadow:var(--shadow);margin:20px 0;}
 #uploadArea h3{margin-top:0;}
@@ -29,7 +28,6 @@ textarea{resize:vertical;min-height:60px;}
 #uLists ul{list-style:none;padding:0;margin:0;}
 #uLists li{margin-bottom:1em;padding-bottom:1em;border-bottom:1px solid #eee;}
 #uLists li:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
-#uLists .listTitle{font-weight:700;margin-bottom:.4em;}
 #uLists a{color:var(--primary);text-decoration:none;font-size:18px;}
 #selector h2, #uploader h2{margin-bottom:1em;}
 #newListForm{background:var(--card);padding:1.5em;border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:1.5em;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
@@ -175,14 +173,23 @@ const api = {
 function setupUploader() {
     dom.dropZone.addEventListener('click', () => dom.fileInput.click());
     dom.fileInput.addEventListener('change', () => handleFileUpload(dom.fileInput.files));
-    dom.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dom.dropZone.classList.add('dragover'); });
-    dom.dropZone.addEventListener('dragleave', () => dom.dropZone.classList.remove('dragover'));
+    
+    // Drag and drop event listeners
+    dom.dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dom.dropZone.classList.add('dragover');
+    });
+    dom.dropZone.addEventListener('dragleave', () => {
+        dom.dropZone.classList.remove('dragover');
+    });
     dom.dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         dom.dropZone.classList.remove('dragover');
         handleFileUpload(e.dataTransfer.files);
     });
+
     dom.uploadForm.addEventListener('submit', doUpload);
+
     dom.previewStrip.addEventListener('click', (e) => {
         if (e.target.classList.contains('del')) {
             const index = parseInt(e.target.dataset.index, 10);
@@ -269,12 +276,10 @@ async function openDeck(name) {
     showSpinner(true);
     currentDeck.listName = name;
     
-    // Fetch all items and the votes for this specific list
     const [allItems, allLists] = await Promise.all([api.get('/api/items'), api.get('/api/lists')]);
     const listVotes = allLists[name] || {};
     currentDeck.votedIds = new Set(Object.keys(listVotes));
     
-    // Filter out items that have already been voted on
     currentDeck.items = allItems.filter(item => !currentDeck.votedIds.has(item.id));
     currentDeck.currentIndex = 0;
     
