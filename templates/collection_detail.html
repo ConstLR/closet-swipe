@@ -18,6 +18,7 @@ h3{font-size:1.1em;text-align:left;border-bottom:1px solid #ccc;padding-bottom:.
 .card img{width:100%;height:220px;object-fit:cover;display:block;}
 .card .info{padding:10px 12px;}
 .card .caption{font-weight:600;color:var(--text);}
+.card .comment{font-style:italic;color:#555;margin-top:8px;background:#f8f9fa;padding:8px;border-radius:6px;font-size:14px;border:1px solid #eee;}
 .card .also-wanted{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.7);color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;max-width:150px;}
 .card .also-wanted strong{display:block;margin-bottom:2px;}
 .card .also-wanted ul{margin:0;padding-left:15px;word-break:break-all;}
@@ -42,18 +43,25 @@ h3{font-size:1.1em;text-align:left;border-bottom:1px solid #ccc;padding-bottom:.
                 {% for item in picks.want %}
                 <div class="card">
                     <img src="/{{ item.thumb }}" alt="{{ item.caption }}">
-                    {% if item.also_wanted_in %}
+                    
+                    {% if item.also_wanted_in and item.also_wanted_in|length > 0 %}
                     <div class="also-wanted">
                         <strong>Aussi dans :</strong>
                         <ul>
-                        {% for list in item.also_wanted_in %}
-                            <li>{{ list }}</li>
+                        {% for other_list in item.also_wanted_in %}
+                            {% if other_list != list_name %} {# N'affiche que les AUTRES listes #}
+                                <li>{{ other_list }}</li>
+                            {% endif %}
                         {% endfor %}
                         </ul>
                     </div>
                     {% endif %}
+                    
                     <div class="info">
                         <div class="caption">{{ item.caption or 'Sans légende' }}</div>
+                        {% if item.comment %}
+                            <div class="comment"><strong>Commentaire :</strong> {{ item.comment }}</div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -70,6 +78,9 @@ h3{font-size:1.1em;text-align:left;border-bottom:1px solid #ccc;padding-bottom:.
                     <img src="/{{ item.thumb }}" alt="{{ item.caption }}">
                     <div class="info">
                         <div class="caption">{{ item.caption or 'Sans légende' }}</div>
+                        {% if item.comment %}
+                            <div class="comment"><strong>Commentaire :</strong> {{ item.comment }}</div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
