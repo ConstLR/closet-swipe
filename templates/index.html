@@ -126,7 +126,30 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 </div>
 
 <div id="deck" class="page-container">
+    <h2 id="deckTitle"></h2>
+    <div id="deckFlex">
+        <div class="bigCard">
+            <div id="deckContent">
+                <img id="bigImg" src="" alt="Article à sélectionner">
+                <div class="caption" id="bigCap"></div>
+                <textarea id="commentText" placeholder="Ajoutez un commentaire (optionnel)..."></textarea>
+                <div class="deckControls">
+                    <button class="want" style="background:var(--success); color:#fff;">Je le veux</button>
+                    <button class="dont" style="background:var(--danger); color:#fff;">Je n'en veux pas</button>
+                </div>
+            </div>
+            <div id="deckFinished" style="display:none; padding: 4em 1em;">
+                <h3>🎉 Liste terminée !</h3>
+                <p>Tous les articles de cette collection ont été examinés.</p>
+                <button class="back-btn" data-target="selector" style="position:static; margin-top:2em; width:auto;">Retour au choix des collections</button>
+            </div>
+        </div>
+        <div class="myList">
+            <h4>Ma Sélection</h4>
+            <div id="myPics"></div>
+        </div>
     </div>
+</div>
 
 <div id="uploaderDeck" class="page-container">
     <h2 id="uploaderDeckTitle"></h2>
@@ -142,7 +165,6 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
     </div>
 </div>
 
-
 <script>
 let filesToUpload = [];
 let activeListName = '';
@@ -150,8 +172,35 @@ let currentDeck = { listName: '', collectionName: '', items: [], votedItems: new
 let uploaderDeck = { items: [], currentIndex: 0 };
 
 const dom = {
-    // ... (tous les éléments DOM de la version précédente)
+    spinner: document.getElementById('spinner'),
+    toast: document.getElementById('toast-notification'),
+    landing: document.getElementById('landing'),
+    uploader: document.getElementById('uploader'),
+    selector: document.getElementById('selector'),
+    deck: document.getElementById('deck'),
     uploaderDeck: document.getElementById('uploaderDeck'),
+    collectionNameInput: document.getElementById('collectionNameInput'),
+    createCollectionBtn: document.getElementById('createCollectionBtn'),
+    collectionsList: document.getElementById('collectionsList'),
+    collectionSelect: document.getElementById('collectionSelect'),
+    previewStrip: document.getElementById('previewStrip'),
+    dropZone: document.getElementById('dropZone'),
+    fileInput: document.getElementById('fileInput'),
+    uploadForm: document.getElementById('uploadForm'),
+    uploadCaption: document.getElementById('uploadCaption'),
+    listNameInput: document.getElementById('listNameInput'),
+    createListBtn: document.getElementById('createListBtn'),
+    selListsContainer: document.getElementById('selListsContainer'),
+    collectionSelectionBox: document.getElementById('collectionSelectionBox'),
+    collectionButtons: document.getElementById('collectionButtons'),
+    deckTitle: document.getElementById('deckTitle'),
+    deckContent: document.getElementById('deckContent'),
+    deckFinished: document.getElementById('deckFinished'),
+    bigImg: document.getElementById('bigImg'),
+    bigCap: document.getElementById('bigCap'),
+    commentText: document.getElementById('commentText'),
+    myPics: document.getElementById('myPics'),
+    deckControls: document.querySelector('#deck .deckControls'),
     uploaderDeckTitle: document.getElementById('uploaderDeckTitle'),
     uploaderDeckImg: document.getElementById('uploaderDeckImg'),
     uploaderDeckCap: document.getElementById('uploaderDeckCap'),
@@ -161,14 +210,217 @@ const dom = {
     uploaderDeckSave: document.getElementById('uploaderDeckSave'),
 };
 
-// --- NOUVELLE FONCTION : Uploader Deck ---
+const show = (id) => {
+    ['landing', 'uploader', 'selector', 'deck', 'uploaderDeck'].forEach(x => {
+        const el = document.getElementById(x);
+        if (el) el.style.display = 'none';
+    });
+    const targetEl = document.getElementById(id);
+    if(targetEl) targetEl.style.display = 'block';
+};
+
+const showSpinner = (visible) => dom.spinner.style.display = visible ? 'flex' : 'none';
+
+const showToast = (message) => {
+    dom.toast.textContent = message;
+    dom.toast.classList.add('show');
+    setTimeout(() => { dom.toast.classList.remove('show'); }, 5000);
+};
+
+const api = {
+    get: (url) => fetch(url).then(r => r.ok ? r.json() : Promise.reject('Erreur réseau')),
+    post: (url, data) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.ok ? r.json() : Promise.reject('Erreur réseau')),
+    delete: (url) => fetch(url, { method: 'DELETE' }).then(r => r.ok ? r.json() : Promise.reject('Erreur réseau')),
+};
+
+async function refreshAllUploader() {
+    await refreshCollectionsDropdown();
+    await refreshCollectionsList();
+}
+
+async function refreshCollectionsDropdown() {
+    const collections = await api.get('/api/collections');
+    dom.collectionSelect.innerHTML = '<option value="">-- Veuillez sélectionner une collection --</option>';
+    collections.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        dom.collectionSelect.appendChild(option);
+    });
+}
+
+async function refreshCollectionsList() {
+    const collections = await api.get('/api/collections');
+    dom.collectionsList.innerHTML = '';
+    collections.forEach(name => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'list-item';
+        itemDiv.innerHTML = `<span>${name}</span>
+            <button class="edit-btn" data-name="${name}">Commenter</button>
+            <button class="delete-btn" data-type="collection" data-name="${name}">Supprimer</button>`;
+        dom.collectionsList.appendChild(itemDiv);
+    });
+}
+
+async function createCollection() {
+    const name = dom.collectionNameInput.value.trim();
+    if (!name) return alert('Le nom de la collection est requis.');
+    await api.post('/api/collections', { name });
+    dom.collectionNameInput.value = '';
+    showToast(`Collection "${name}" créée !`);
+    refreshAllUploader();
+}
+
+function handleFileUpload(files) { filesToUpload.push(...Array.from(files)); renderPreviews(); }
+
+function renderPreviews() {
+    dom.previewStrip.innerHTML = '';
+    filesToUpload.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'thumb';
+            wrap.innerHTML = `<img src="${e.target.result}" alt="Prévisualisation"><button class="del" data-index="${index}">×</button>`;
+            dom.previewStrip.appendChild(wrap);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+async function doUpload(e) {
+    e.preventDefault();
+    const collection = dom.collectionSelect.value;
+    if (!collection) return alert('Veuillez sélectionner une collection.');
+    if (filesToUpload.length === 0) return alert('Veuillez sélectionner des photos.');
+    showSpinner(true);
+    const fd = new FormData();
+    fd.append('collection', collection);
+    filesToUpload.forEach(f => fd.append('photos', f));
+    fd.append('caption', dom.uploadCaption.value);
+    await fetch('/bulk_upload', { method: 'POST', body: fd });
+    filesToUpload = [];
+    renderPreviews();
+    dom.uploadCaption.value = '';
+    showSpinner(false);
+    showToast('Upload réussi !');
+}
+
+async function createList() {
+    const name = dom.listNameInput.value.trim();
+    if (!name) return alert('Le nom de la liste est requis.');
+    await api.post(`/api/list/${name}`);
+    dom.listNameInput.value = '';
+    refreshSelectorLists();
+}
+
+async function refreshSelectorLists() {
+    const lists = await api.get('/api/lists');
+    dom.selListsContainer.innerHTML = '';
+    Object.keys(lists).forEach(name => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'list-item';
+        itemDiv.innerHTML = `<span>${name}</span>
+            <button class="vote-list-btn" data-name="${name}">Voter</button>
+            <button class="delete-btn" data-type="list" data-name="${name}">Supprimer</button>`;
+        dom.selListsContainer.appendChild(itemDiv);
+    });
+}
+
+async function setActiveList(listName) {
+    activeListName = listName;
+    document.querySelectorAll('.vote-list-btn').forEach(btn => {
+        btn.style.border = btn.dataset.name === listName ? '2px solid var(--success)' : 'none';
+    });
+    const collections = await api.get('/api/collections');
+    dom.collectionButtons.innerHTML = '';
+    collections.forEach(name => {
+        const btn = document.createElement('button');
+        btn.textContent = name;
+        btn.onclick = () => openDeck(activeListName, name);
+        dom.collectionButtons.appendChild(btn);
+    });
+    dom.collectionSelectionBox.style.display = 'block';
+}
+
+async function openDeck(listName, collectionName) {
+    showSpinner(true);
+    currentDeck.listName = listName;
+    currentDeck.collectionName = collectionName;
+    const [collectionItems, allLists] = await Promise.all([
+        api.get(`/api/collections/${collectionName}/items`),
+        api.get('/api/lists')
+    ]);
+    const listVotes = allLists[listName] || {};
+    currentDeck.items = collectionItems;
+    currentDeck.votedItems.clear();
+    for (const itemId in listVotes) {
+        if (collectionItems.some(item => item.id === itemId)) {
+            currentDeck.votedItems.set(itemId, listVotes[itemId]);
+        }
+    }
+    show('deck');
+    dom.deckTitle.innerHTML = `<button class="back-btn" data-target="selector">← Retour</button>Vote pour <strong>${collectionName}</strong> (liste : <strong>${listName}</strong>)`;
+    updateMyPicks();
+    let firstUnvotedIndex = currentDeck.items.findIndex(item => !currentDeck.votedItems.has(item.id));
+    renderCurrentDeckCard(firstUnvotedIndex);
+    showSpinner(false);
+}
+
+function renderCurrentDeckCard(index) {
+    if (index === -1) {
+        dom.deckContent.style.display = 'none';
+        dom.deckFinished.style.display = 'block';
+        currentDeck.currentItem = null;
+        return;
+    }
+    dom.deckContent.style.display = 'block';
+    dom.deckFinished.style.display = 'none';
+    currentDeck.currentItem = currentDeck.items[index];
+    dom.bigImg.src = `/static/photos/${currentDeck.currentItem.id}`;
+    dom.bigCap.textContent = currentDeck.currentItem.caption || 'Sans légende';
+    const existingVote = currentDeck.votedItems.get(currentDeck.currentItem.id);
+    dom.commentText.value = existingVote ? existingVote.comment : '';
+}
+
+async function vote(choice) {
+    if (!currentDeck.currentItem) return;
+    const currentItemId = currentDeck.currentItem.id;
+    const voteData = { choice: choice, comment: dom.commentText.value };
+    currentDeck.votedItems.set(currentItemId, voteData);
+    await api.post(`/api/list/${currentDeck.listName}/vote`, {
+        item: currentItemId,
+        ...voteData
+    });
+    updateMyPicks();
+    let nextIndex = currentDeck.items.findIndex(item => !currentDeck.votedItems.has(item.id));
+    renderCurrentDeckCard(nextIndex);
+}
+
+function updateMyPicks() {
+    dom.myPics.innerHTML = '';
+    const itemsById = Object.fromEntries(currentDeck.items.map(item => [item.id, item]));
+    currentDeck.votedItems.forEach((voteData, itemId) => {
+        const item = itemsById[itemId];
+        if (!item) return;
+        const img = document.createElement('img');
+        img.src = item.thumb;
+        img.className = voteData.choice;
+        img.dataset.itemId = itemId;
+        img.onclick = () => jumpToItem(itemId);
+        dom.myPics.appendChild(img);
+    });
+}
+
+function jumpToItem(itemId) {
+    const itemIndex = currentDeck.items.findIndex(item => item.id === itemId);
+    if (itemIndex > -1) { renderCurrentDeckCard(itemIndex); }
+}
+
 async function openUploaderDeck(collectionName) {
     showSpinner(true);
-    const items = await api.get(`/api/collections/${collectionName}/items`);
-    uploaderDeck.items = items;
+    uploaderDeck.items = await api.get(`/api/collections/${collectionName}/items`);
     uploaderDeck.currentIndex = 0;
-    
-    dom.uploaderDeckTitle.innerHTML = `<button class="back-btn" data-target="uploader">← Retour</button>Commenter la collection : <strong>${collectionName}</strong>`;
+    dom.uploaderDeckTitle.innerHTML = `<button class="back-btn" data-target="uploader">← Retour</button>Commenter : <strong>${collectionName}</strong>`;
     show('uploaderDeck');
     renderUploaderDeckCard();
     showSpinner(false);
@@ -180,44 +432,77 @@ function renderUploaderDeckCard() {
         dom.uploaderDeckImg.style.display = 'none';
         return;
     }
-
-    const item = uploaderDeck.items[uploaderDeck.currentIndex];
     dom.uploaderDeckImg.style.display = 'block';
+    const item = uploaderDeck.items[uploaderDeck.currentIndex];
     dom.uploaderDeckImg.src = `/static/photos/${item.id}`;
     dom.uploaderDeckCap.textContent = `Article ${uploaderDeck.currentIndex + 1} / ${uploaderDeck.items.length}`;
     dom.uploaderDeckComment.value = item.caption || '';
 }
 
 async function saveUploaderComment() {
+    if (uploaderDeck.items.length === 0) return;
     const item = uploaderDeck.items[uploaderDeck.currentIndex];
     const newCaption = dom.uploaderDeckComment.value;
     await api.post(`/api/caption/${item.id}`, { caption: newCaption });
-    // Mettre à jour l'objet local pour ne pas avoir à recharger
-    item.caption = newCaption;
+    item.caption = newCaption; // Update local data
     showToast('Légende enregistrée !');
 }
 
-// --- MODIFICATIONS DES FONCTIONS EXISTANTES ---
-async function refreshCollectionsList() {
-    const collections = await api.get('/api/collections');
-    dom.collectionsList.innerHTML = '';
-    collections.forEach(name => {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'list-item';
-        itemDiv.innerHTML = `
-            <span>${name}</span>
-            <button class="edit-btn" data-name="${name}">Commenter</button>
-            <button class="delete-btn" data-type="collection" data-name="${name}">Supprimer</button>`;
-        dom.collectionsList.appendChild(itemDiv);
-    });
-}
-
-
-// --- INITIALISATION ---
 function initialize() {
-    // ... (Le reste de la fonction initialize, avec tous les event listeners)
+    document.body.addEventListener('click', async (e) => {
+        const target = e.target;
+        if (target.classList.contains('back-btn')) {
+            show(target.dataset.target);
+            if (target.dataset.target === 'selector') {
+                dom.collectionSelectionBox.style.display = 'none';
+                document.querySelectorAll('.vote-list-btn').forEach(btn => btn.style.border = 'none');
+            }
+        } else if (target.classList.contains('delete-btn')) {
+            const type = target.dataset.type;
+            const name = target.dataset.name;
+            const confirmMsg = `Êtes-vous sûr de vouloir supprimer ${type === 'collection' ? 'la collection' : 'la liste'} "${name}" ?\n${type === 'collection' ? 'ATTENTION : Toutes les photos de cette collection seront définitivement effacées.' : ''}`;
+            if (confirm(confirmMsg)) {
+                await api.delete(`/api/${type}s/${name}`);
+                showToast(`${type === 'collection' ? 'Collection' : 'Liste'} supprimée.`);
+                if (type === 'collection') { await refreshAllUploader(); }
+                else { await refreshSelectorLists(); }
+            }
+        } else if (target.classList.contains('vote-list-btn')) {
+            setActiveList(target.dataset.name);
+        } else if (target.classList.contains('edit-btn')) {
+            openUploaderDeck(target.dataset.name);
+        }
+    });
 
-    // Ajout des listeners pour le nouveau Uploader Deck
+    dom.landing.addEventListener('click', e => {
+        const button = e.target.closest('button[data-target]');
+        if (button) {
+            const target = button.dataset.target;
+            show(target);
+            if (target === 'uploader') refreshAllUploader();
+            if (target === 'selector') refreshSelectorLists();
+        }
+    });
+
+    dom.createCollectionBtn.addEventListener('click', createCollection);
+    dom.createListBtn.addEventListener('click', createList);
+    dom.dropZone.addEventListener('click', () => dom.fileInput.click());
+    dom.fileInput.addEventListener('change', () => handleFileUpload(dom.fileInput.files));
+    dom.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dom.dropZone.classList.add('dragover'); });
+    dom.dropZone.addEventListener('dragleave', () => { dom.dropZone.classList.remove('dragover'); });
+    dom.dropZone.addEventListener('drop', (e) => { e.preventDefault(); dom.dropZone.classList.remove('dragover'); handleFileUpload(e.dataTransfer.files); });
+    dom.uploadForm.addEventListener('submit', doUpload);
+    dom.previewStrip.addEventListener('click', (e) => {
+        if (e.target.classList.contains('del')) {
+            const index = parseInt(e.target.dataset.index, 10);
+            filesToUpload.splice(index, 1);
+            renderPreviews();
+        }
+    });
+    dom.deckControls.addEventListener('click', e => {
+        if (e.target.classList.contains('want')) vote('want');
+        if (e.target.classList.contains('dont')) vote('dont');
+    });
     dom.uploaderDeckPrev.addEventListener('click', () => {
         if (uploaderDeck.currentIndex > 0) {
             uploaderDeck.currentIndex--;
@@ -231,17 +516,8 @@ function initialize() {
         }
     });
     dom.uploaderDeckSave.addEventListener('click', saveUploaderComment);
-
-    // Modifier le listener de body pour inclure le bouton "Commenter"
-    document.body.addEventListener('click', async (e) => {
-        // ... (logique des boutons back-btn et delete-btn)
-        
-        if (e.target.classList.contains('edit-btn')) {
-            openUploaderDeck(e.target.dataset.name);
-        }
-    });
 }
-// ... (le reste du script complet doit être ici)
+document.addEventListener('DOMContentLoaded', initialize);
 </script>
 </body>
 </html>
