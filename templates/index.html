@@ -34,6 +34,7 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 .list-item:last-child { border-bottom: none; }
 .list-item span { flex-grow: 1; font-weight: 600; }
 .delete-btn { width: auto; background-color: var(--danger); color: white; border: none; }
+.vote-list-btn { width: auto; background-color: var(--success); color: white; border: none; }
 #newListForm, #newCollectionForm {display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
 #newListForm input, #newCollectionForm input {flex:1 1 200px; background:#f8f8f8;}
 #newListForm button, #newCollectionForm button { background: var(--primary); color:#fff; border:none; flex-shrink: 0; width: auto;}
@@ -81,13 +82,29 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
         <h3>Gérer les collections</h3>
         <div id="newCollectionForm">
             <input id="collectionNameInput" placeholder="Nom de la collection (ex: Robes d'été)">
-            <button id="createCollectionBtn">Créer la collection</button>
+            <button id="createCollectionBtn">Créer</button>
         </div>
         <div id="collectionsList" style="margin-top:1em;"></div>
     </div>
     <div class="section-box">
         <h3>Uploader de nouvelles photos</h3>
-        <form id="uploadForm"></form>
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="collectionSelect">1. Choisissez une collection</label>
+                <select id="collectionSelect" required></select>
+            </div>
+            <div class="form-group">
+                <label>2. Sélectionnez les photos</label>
+                <div class="photo-strip" id="previewStrip"></div>
+                <div id="dropZone">Glissez-déposez les photos ici ou <strong>cliquez pour parcourir</strong></div>
+                <input type="file" id="fileInput" multiple style="display: none;">
+            </div>
+            <div class="form-group">
+                <label for="uploadCaption">3. Ajoutez une légende (optionnel)</label>
+                <textarea id="uploadCaption" placeholder="Cette légende sera appliquée à toutes les photos."></textarea>
+            </div>
+            <button type="submit" style="background:var(--primary);color:#fff;">Uploader les photos</button>
+        </form>
     </div>
 </div>
 
@@ -110,7 +127,22 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 <div id="deck" class="page-container">
     <h2 id="deckTitle"></h2>
     <div id="deckFlex">
-        <div class="bigCard"></div>
+        <div class="bigCard">
+            <div id="deckContent">
+                <img id="bigImg" src="" alt="Article à sélectionner">
+                <div class="caption" id="bigCap"></div>
+                <textarea id="commentText" placeholder="Ajoutez un commentaire (optionnel)..."></textarea>
+                <div class="deckControls">
+                    <button class="want" style="background:var(--success); color:#fff;">Je le veux</button>
+                    <button class="dont" style="background:var(--danger); color:#fff;">Je n'en veux pas</button>
+                </div>
+            </div>
+            <div id="deckFinished" style="display:none; padding: 4em 1em;">
+                <h3>🎉 Liste terminée !</h3>
+                <p>Tous les articles de cette collection ont été examinés.</p>
+                <button class="back-btn" data-target="selector" style="position:static; margin-top:2em; width:auto;">Retour au choix des collections</button>
+            </div>
+        </div>
         <div class="myList">
             <h4>Ma Sélection</h4>
             <div id="myPics"></div>
@@ -121,21 +153,75 @@ textarea{width:100%;box-sizing:border-box;padding:.5em;border:1px solid var(--bo
 <script>
 let filesToUpload = [];
 let activeListName = '';
-let currentDeck = { listName: '', collectionName: '', items: [], votedItems: new Map() };
+let currentDeck = { listName: '', collectionName: '', items: [], votedItems: new Map(), currentItem: null };
 
 const dom = {
-    // ... (Tous les éléments DOM de la version précédente)
+    spinner: document.getElementById('spinner'),
+    toast: document.getElementById('toast-notification'),
+    landing: document.getElementById('landing'),
+    uploader: document.getElementById('uploader'),
+    selector: document.getElementById('selector'),
+    deck: document.getElementById('deck'),
+    collectionNameInput: document.getElementById('collectionNameInput'),
+    createCollectionBtn: document.getElementById('createCollectionBtn'),
     collectionsList: document.getElementById('collectionsList'),
+    collectionSelect: document.getElementById('collectionSelect'),
+    previewStrip: document.getElementById('previewStrip'),
+    dropZone: document.getElementById('dropZone'),
+    fileInput: document.getElementById('fileInput'),
+    uploadForm: document.getElementById('uploadForm'),
+    uploadCaption: document.getElementById('uploadCaption'),
+    listNameInput: document.getElementById('listNameInput'),
+    createListBtn: document.getElementById('createListBtn'),
     selListsContainer: document.getElementById('selListsContainer'),
+    collectionSelectionBox: document.getElementById('collectionSelectionBox'),
+    collectionButtons: document.getElementById('collectionButtons'),
+    deckTitle: document.getElementById('deckTitle'),
+    deckContent: document.getElementById('deckContent'),
+    deckFinished: document.getElementById('deckFinished'),
+    bigImg: document.getElementById('bigImg'),
+    bigCap: document.getElementById('bigCap'),
+    commentText: document.getElementById('commentText'),
+    myPics: document.getElementById('myPics'),
+    deckControls: document.querySelector('.deckControls'),
 };
 
+const show = (id) => {
+    ['landing', 'uploader', 'selector', 'deck'].forEach(x => {
+        const el = document.getElementById(x);
+        if (el) el.style.display = 'none';
+    });
+    const targetEl = document.getElementById(id);
+    if(targetEl) targetEl.style.display = 'block';
+};
+const showSpinner = (visible) => dom.spinner.style.display = visible ? 'flex' : 'none';
+const showToast = (message) => {
+    dom.toast.textContent = message;
+    dom.toast.classList.add('show');
+    setTimeout(() => {
+        dom.toast.classList.remove('show');
+    }, 5000);
+};
 const api = {
     get: (url) => fetch(url).then(r => r.ok ? r.json() : Promise.reject('Erreur réseau')),
     post: (url, data) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.ok ? r.json() : Promise.reject('Erreur réseau')),
     delete: (url) => fetch(url, { method: 'DELETE' }).then(r => r.ok ? r.json() : Promise.reject('Erreur réseau')),
 };
 
-// --- Fonctions de rafraîchissement ---
+async function refreshAllUploader() {
+    await refreshCollectionsDropdown();
+    await refreshCollectionsList();
+}
+async function refreshCollectionsDropdown() {
+    const collections = await api.get('/api/collections');
+    dom.collectionSelect.innerHTML = '<option value="">-- Veuillez sélectionner une collection --</option>';
+    collections.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        dom.collectionSelect.appendChild(option);
+    });
+}
 async function refreshCollectionsList() {
     const collections = await api.get('/api/collections');
     dom.collectionsList.innerHTML = '';
@@ -146,110 +232,209 @@ async function refreshCollectionsList() {
         dom.collectionsList.appendChild(itemDiv);
     });
 }
-
+async function createCollection() {
+    const name = dom.collectionNameInput.value.trim();
+    if (!name) return alert('Le nom de la collection est requis.');
+    await api.post('/api/collections', { name });
+    dom.collectionNameInput.value = '';
+    showToast(`Collection "${name}" créée !`);
+    refreshAllUploader();
+}
+function handleFileUpload(files) { filesToUpload.push(...Array.from(files)); renderPreviews(); }
+function renderPreviews() {
+    dom.previewStrip.innerHTML = '';
+    filesToUpload.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'thumb';
+            wrap.innerHTML = `<img src="${e.target.result}" alt="Prévisualisation"><button class="del" data-index="${index}">×</button>`;
+            dom.previewStrip.appendChild(wrap);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+async function doUpload(e) {
+    e.preventDefault();
+    const collection = dom.collectionSelect.value;
+    if (!collection) return alert('Veuillez sélectionner une collection.');
+    if (filesToUpload.length === 0) return alert('Veuillez sélectionner des photos.');
+    showSpinner(true);
+    const fd = new FormData();
+    fd.append('collection', collection);
+    filesToUpload.forEach(f => fd.append('photos', f));
+    fd.append('caption', dom.uploadCaption.value);
+    await fetch('/bulk_upload', { method: 'POST', body: fd });
+    filesToUpload = [];
+    renderPreviews();
+    dom.uploadCaption.value = '';
+    showSpinner(false);
+    showToast('Upload réussi !');
+}
+async function createList() {
+    const name = dom.listNameInput.value.trim();
+    if (!name) return alert('Le nom de la liste est requis.');
+    await api.post(`/api/list/${name}`);
+    dom.listNameInput.value = '';
+    refreshSelectorLists();
+}
 async function refreshSelectorLists() {
     const lists = await api.get('/api/lists');
     dom.selListsContainer.innerHTML = '';
     Object.keys(lists).forEach(name => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'list-item';
-        itemDiv.innerHTML = `
-            <span>${name}</span>
+        itemDiv.innerHTML = `<span>${name}</span>
             <button class="vote-list-btn" data-name="${name}">Voter</button>
             <button class="delete-btn" data-type="list" data-name="${name}">Supprimer</button>`;
         dom.selListsContainer.appendChild(itemDiv);
     });
 }
-
-// --- Logique pour changer de vote ---
+async function setActiveList(listName) {
+    activeListName = listName;
+    document.querySelectorAll('.vote-list-btn').forEach(btn => {
+        btn.style.border = btn.dataset.name === listName ? '2px solid var(--success)' : 'none';
+    });
+    const collections = await api.get('/api/collections');
+    dom.collectionButtons.innerHTML = '';
+    collections.forEach(name => {
+        const btn = document.createElement('button');
+        btn.textContent = name;
+        btn.onclick = () => openDeck(activeListName, name);
+        dom.collectionButtons.appendChild(btn);
+    });
+    dom.collectionSelectionBox.style.display = 'block';
+}
+async function openDeck(listName, collectionName) {
+    showSpinner(true);
+    currentDeck.listName = listName;
+    currentDeck.collectionName = collectionName;
+    
+    const [collectionItems, allLists] = await Promise.all([
+        api.get(`/api/collections/${collectionName}/items`),
+        api.get('/api/lists')
+    ]);
+    const listVotes = allLists[listName] || {};
+    currentDeck.items = collectionItems;
+    currentDeck.votedItems = new Map();
+    for (const itemId in listVotes) {
+        if (collectionItems.some(item => item.id === itemId)) {
+            currentDeck.votedItems.set(itemId, listVotes[itemId].choice);
+        }
+    }
+    
+    show('deck');
+    dom.deckTitle.innerHTML = `<button class="back-btn" data-target="selector">← Retour</button>Vote pour <strong>${collectionName}</strong> (liste : <strong>${listName}</strong>)`;
+    updateMyPicks();
+    
+    let firstUnvotedIndex = currentDeck.items.findIndex(item => !currentDeck.votedItems.has(item.id));
+    renderCurrentDeckCard(firstUnvotedIndex);
+    showSpinner(false);
+}
+function renderCurrentDeckCard(index) {
+    if (index === -1) {
+        dom.deckContent.style.display = 'none';
+        dom.deckFinished.style.display = 'block';
+        return;
+    }
+    dom.deckContent.style.display = 'block';
+    dom.deckFinished.style.display = 'none';
+    currentDeck.currentItem = currentDeck.items[index];
+    dom.bigImg.src = `/static/photos/${currentDeck.currentItem.id}`;
+    dom.bigCap.textContent = currentDeck.currentItem.caption || 'Sans légende';
+    dom.commentText.value = '';
+}
+async function vote(choice) {
+    if (!currentDeck.currentItem) return;
+    const currentItemId = currentDeck.currentItem.id;
+    currentDeck.votedItems.set(currentItemId, choice);
+    
+    await api.post(`/api/list/${currentDeck.listName}/vote`, {
+        item: currentItemId,
+        choice: choice,
+        comment: dom.commentText.value
+    });
+    updateMyPicks();
+    
+    let nextIndex = currentDeck.items.findIndex(item => !currentDeck.votedItems.has(item.id));
+    renderCurrentDeckCard(nextIndex);
+}
 function updateMyPicks() {
     dom.myPics.innerHTML = '';
+    const itemsById = Object.fromEntries(currentDeck.items.map(item => [item.id, item]));
     currentDeck.votedItems.forEach((choice, itemId) => {
-        const item = currentDeck.items.find(i => i.id === itemId) || {id: itemId, thumb: `/static/photos/${itemId}`}; // Fallback si l'item n'est pas dans le deck actuel
+        const item = itemsById[itemId];
+        if (!item) return; // Ne pas afficher si l'item n'est pas dans le deck actuel
         const img = document.createElement('img');
         img.src = item.thumb;
-        img.className = choice; // 'want' ou 'dont'
+        img.className = choice;
         img.dataset.itemId = itemId;
         img.onclick = () => jumpToItem(itemId);
         dom.myPics.appendChild(img);
     });
 }
-
 function jumpToItem(itemId) {
     const itemIndex = currentDeck.items.findIndex(item => item.id === itemId);
     if (itemIndex > -1) {
         renderCurrentDeckCard(itemIndex);
     }
 }
-
-async function vote(choice) {
-    const itemIndex = currentDeck.items.findIndex(item => item.id === currentDeck.currentItem.id);
-    currentDeck.votedItems.set(currentDeck.currentItem.id, choice);
-    
-    await api.post(`/api/list/${currentDeck.listName}/vote`, {
-        item: currentDeck.currentItem.id,
-        choice: choice,
-        comment: dom.commentText.value
-    });
-
-    updateMyPicks();
-    
-    // Passe à l'item suivant non voté
-    let nextIndex = -1;
-    for (let i = 0; i < currentDeck.items.length; i++) {
-        if (!currentDeck.votedItems.has(currentDeck.items[i].id)) {
-            nextIndex = i;
-            break;
-        }
-    }
-
-    if (nextIndex !== -1) {
-        renderCurrentDeckCard(nextIndex);
-    } else {
-        renderCurrentDeckCard(-1); // Fin du deck
-    }
-}
-
-// --- Initialisation et autres fonctions ---
 function initialize() {
-    // ... (EventListener pour back-btn, landing, etc.)
-
-    // Event Delegation pour la suppression
     document.body.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('back-btn')) {
+            show(e.target.dataset.target);
+            if (e.target.dataset.target === 'selector') {
+                dom.collectionSelectionBox.style.display = 'none';
+                document.querySelectorAll('.vote-list-btn').forEach(btn => btn.style.border = 'none');
+            }
+        }
         if (e.target.classList.contains('delete-btn')) {
             const type = e.target.dataset.type;
             const name = e.target.dataset.name;
             const confirmMsg = `Êtes-vous sûr de vouloir supprimer ${type === 'collection' ? 'la collection' : 'la liste'} "${name}" ?\n${type === 'collection' ? 'ATTENTION : Toutes les photos de cette collection seront définitivement effacées.' : ''}`;
-            
             if (confirm(confirmMsg)) {
                 await api.delete(`/api/${type}s/${name}`);
                 showToast(`${type === 'collection' ? 'Collection' : 'Liste'} supprimée.`);
-                if (type === 'collection') {
-                    refreshCollectionsList();
-                    refreshCollectionsDropdown();
-                } else {
-                    refreshSelectorLists();
-                }
+                type === 'collection' ? refreshAllUploader() : refreshSelectorLists();
             }
         }
         if (e.target.classList.contains('vote-list-btn')) {
             setActiveList(e.target.dataset.name);
         }
     });
-    // ... (Le reste de la fonction initialize, y compris les setups)
+
+    dom.landing.addEventListener('click', e => {
+        const targetElement = e.target.closest('button, a.button-link');
+        if (!targetElement) return;
+        if (targetElement.dataset.target) {
+            const target = targetElement.dataset.target;
+            show(target);
+            if (target === 'uploader') refreshAllUploader();
+            if (target === 'selector') refreshSelectorLists();
+        }
+    });
+
+    dom.createCollectionBtn.addEventListener('click', createCollection);
+    dom.createListBtn.addEventListener('click', createList);
+    dom.dropZone.addEventListener('click', () => dom.fileInput.click());
+    dom.fileInput.addEventListener('change', () => handleFileUpload(dom.fileInput.files));
+    dom.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dom.dropZone.classList.add('dragover'); });
+    dom.dropZone.addEventListener('dragleave', () => { dom.dropZone.classList.remove('dragover'); });
+    dom.dropZone.addEventListener('drop', (e) => { e.preventDefault(); dom.dropZone.classList.remove('dragover'); handleFileUpload(e.dataTransfer.files); });
+    dom.uploadForm.addEventListener('submit', doUpload);
+    
+    dom.previewStrip.addEventListener('click', (e) => {
+        if (e.target.classList.contains('del')) {
+            const index = parseInt(e.target.dataset.index, 10);
+            filesToUpload.splice(index, 1);
+            renderPreviews();
+        }
+    });
+    dom.deckControls.addEventListener('click', e => {
+        if (e.target.classList.contains('want')) vote('want');
+        if (e.target.classList.contains('dont')) vote('dont');
+    });
 }
-
-// Assurez-vous d'avoir une fonction `renderCurrentDeckCard` qui accepte un index
-function renderCurrentDeckCard(index) {
-    if (index === -1 || currentDeck.items.length === 0) {
-        // ... Logique de fin de deck
-        return;
-    }
-    currentDeck.currentItem = currentDeck.items[index];
-    // ... Reste de la logique d'affichage de l'image, etc.
-}
-
-
 document.addEventListener('DOMContentLoaded', initialize);
 </script>
 </body>
